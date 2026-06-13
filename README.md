@@ -6,6 +6,8 @@ There are already bigger usage trackers on the market. This one is intentionally
 
 Open source: [github.com/mbogdan0/claude-quotalis](https://github.com/mbogdan0/claude-quotalis)
 
+![Quotalis for Claude screenshot](img.jpg)
+
 ## What it does
 
 - Shows Claude session, weekly, and Opus weekly usage when Claude returns those values.
