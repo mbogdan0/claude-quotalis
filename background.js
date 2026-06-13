@@ -1,7 +1,5 @@
 const REFRESH_ALARM = "quotalis-refresh";
-const BADGE_ALARM = "quotalis-badge";
 const REFRESH_PERIOD_MINUTES = 1;
-const BADGE_PERIOD_MINUTES = 0.5;
 const CLAUDE_ORIGIN = "https://claude.ai";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -17,13 +15,6 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === REFRESH_ALARM) {
     refreshUsage();
-    return;
-  }
-
-  if (alarm.name === BADGE_ALARM) {
-    chrome.storage.local.get("usageData", ({ usageData }) => {
-      if (usageData) updateBadge(usageData);
-    });
   }
 });
 
@@ -33,27 +24,38 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  if (message?.action === "getData") {
-    chrome.storage.local.get("usageData", ({ usageData }) => {
-      sendResponse(usageData || null);
-    });
-    return true;
-  }
-
   return false;
 });
 
 function scheduleAlarms() {
   chrome.alarms.create(REFRESH_ALARM, { periodInMinutes: REFRESH_PERIOD_MINUTES });
-  chrome.alarms.create(BADGE_ALARM, { periodInMinutes: BADGE_PERIOD_MINUTES });
 }
 
 async function refreshUsage() {
-  const usageData = await readClaudeUsage();
-  usageData.lastUpdated = Date.now();
+  const result = await readClaudeUsage();
+  const { usageData: previous } = await chrome.storage.local.get("usageData");
+
+  let usageData;
+  if (result.error && hasUsableData(previous)) {
+    // Keep the last known-good numbers; flag the failed refresh instead of blanking.
+    usageData = {
+      ...previous,
+      lastError: result.error,
+      lastErrorHint: result.hint || null,
+      lastErrorAt: Date.now(),
+    };
+  } else {
+    usageData = result;
+    usageData.lastUpdated = Date.now();
+  }
+
   await chrome.storage.local.set({ usageData });
   updateBadge(usageData);
   return usageData;
+}
+
+function hasUsableData(usageData) {
+  return Boolean(usageData && !usageData.error && usageData.session);
 }
 
 async function readClaudeUsage() {
@@ -147,6 +149,10 @@ async function getActiveOrganizationId(cookieHeader) {
 
 function fetchClaudeJson(url, cookieHeader) {
   return fetch(url, {
+    // host_permissions grant cookied requests to claude.ai; "include" makes the
+    // browser attach them reliably (a manual Cookie header is a forbidden, stripped
+    // fetch header and cannot be relied on).
+    credentials: "include",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -173,7 +179,7 @@ function normalizeBootstrapResponse(payload) {
   const usage = {
     plan: detectPlan(payload) || "Pro",
     session: { percentage: 0, resetsAt: null },
-    weekly: { percentage: 0, resetsAt: null },
+    weekly: null,
     weeklyOpus: null,
     source: "bootstrap",
   };
@@ -242,16 +248,22 @@ function clampPercentage(value) {
 }
 
 function updateBadge(usageData) {
-  if (usageData.error) {
+  // Only fall back to the error badge when there is no usable data to show; a
+  // transient refresh failure keeps the last known-good badge (see refreshUsage).
+  if (!usageData.session) {
     chrome.action.setBadgeText({ text: "!" });
     chrome.action.setBadgeBackgroundColor({ color: "#D92D20" });
     return;
   }
 
-  const remaining = Math.max(0, 100 - (usageData.session?.percentage || 0));
-  chrome.action.setBadgeText({ text: `${remaining}%` });
+  // Badge shows quota remaining (a number, no "%", so "100" never gets clipped).
+  const remaining = Math.max(0, 100 - (usageData.session.percentage || 0));
+  chrome.action.setBadgeText({ text: String(remaining) });
 
-  if (remaining <= 10) {
+  if (remaining >= 100) {
+    // Full quota — the limit has just reset. Use a distinct, standout color.
+    chrome.action.setBadgeBackgroundColor({ color: "#2563EB" });
+  } else if (remaining <= 10) {
     chrome.action.setBadgeBackgroundColor({ color: "#D92D20" });
   } else if (remaining <= 30) {
     chrome.action.setBadgeBackgroundColor({ color: "#B7791F" });

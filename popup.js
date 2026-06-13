@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", initializePopup);
 
 function initializePopup() {
   localizeDocument();
-  refreshButton.addEventListener("click", refreshUsage);
+  refreshButton.addEventListener("click", () => refreshUsage());
   loadStoredUsage();
   setInterval(updateLiveLabels, 1000);
 }
@@ -31,19 +31,18 @@ function localizeDocument() {
 }
 
 function loadStoredUsage() {
-  chrome.runtime.sendMessage({ action: "getData" }, (usageData) => {
-    if (usageData) {
-      renderUsage(usageData);
-      return;
-    }
-
-    refreshUsage();
+  // Read the cache directly so the popup paints instantly without waking the
+  // (possibly terminated) service worker, then refresh in the background.
+  chrome.storage.local.get("usageData", ({ usageData }) => {
+    if (usageData) renderUsage(usageData);
+    refreshUsage({ showLoader: !usageData });
   });
 }
 
-function refreshUsage() {
+function refreshUsage({ showLoader = false } = {}) {
   refreshButton.disabled = true;
   refreshButton.classList.add("is-refreshing");
+  if (showLoader) showLoading();
 
   chrome.runtime.sendMessage({ action: "refresh" }, (usageData) => {
     refreshButton.disabled = false;
@@ -53,31 +52,50 @@ function refreshUsage() {
   });
 }
 
+function showLoading() {
+  content.innerHTML = `
+    <div class="empty">
+      <div class="loader" aria-hidden="true"></div>
+      <p>${escapeHtml(message("readingUsage"))}</p>
+    </div>
+  `;
+}
+
 function renderUsage(usageData) {
   currentUsageData = usageData;
   planValue.textContent = displayPlan(usageData);
   updatedValue.textContent = formatUpdatedRelative(usageData.lastUpdated);
+  applyStaleState(usageData);
 
-  if (usageData.error) {
+  // Full error screen only when there is no usable data to show.
+  if (!usageData.session) {
     content.innerHTML = `
       <div class="error">
-        <strong>${escapeHtml(usageData.error)}</strong>
-        <p>${escapeHtml(usageData.hint || "")}</p>
+        <strong>${escapeHtml(usageData.error || usageData.lastError || message("usageUnavailable"))}</strong>
+        <p>${escapeHtml(usageData.hint || usageData.lastErrorHint || "")}</p>
       </div>
     `;
     return;
   }
 
-  const rows = [
-    usageRow(message("sessionUsage"), usageData.session),
-    usageRow(message("weeklyUsage"), usageData.weekly),
-  ];
+  const rows = [usageRow(message("sessionUsage"), usageData.session)];
+
+  if (usageData.weekly) {
+    rows.push(usageRow(message("weeklyUsage"), usageData.weekly));
+  }
 
   if (usageData.weeklyOpus) {
     rows.push(usageRow(message("opusWeeklyUsage"), usageData.weeklyOpus));
   }
 
   content.innerHTML = rows.join("");
+}
+
+function applyStaleState(usageData) {
+  // Last refresh failed but we still have usable numbers: flag them as stale.
+  const stale = Boolean(usageData.lastError && usageData.session);
+  updatedValue.classList.toggle("is-stale", stale);
+  updatedValue.title = stale ? message("refreshFailed") : "";
 }
 
 function updateLiveLabels() {
@@ -92,17 +110,18 @@ function usageRow(label, windowData) {
   const remaining = 100 - used;
   const reset = windowData?.resetsAt || "";
 
+  // "Remaining" is the primary number everywhere; the bar depletes as you consume.
   return `
     <article class="usage-row">
       <div class="usage-head">
         <span class="usage-title">${escapeHtml(label)}</span>
-        <span class="usage-percent">${escapeHtml(message("usagePercent", [used]))}</span>
+        <span class="usage-percent">${escapeHtml(message("remainingPercent", [remaining]))}</span>
       </div>
-      <div class="track" aria-hidden="true">
-        <div class="fill ${barTone(used)}" style="width: ${used}%"></div>
+      <div class="track" role="progressbar" aria-valuenow="${remaining}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(label)}">
+        <div class="fill ${barTone(remaining)}" style="width: ${remaining}%"></div>
       </div>
       <div class="usage-meta">
-        <span>${escapeHtml(message("remainingPercent", [remaining]))}</span>
+        <span>${escapeHtml(message("usagePercent", [used]))}</span>
         <span data-reset="${escapeHtml(reset)}">${reset ? formatReset(reset) : message("noResetTime")}</span>
       </div>
     </article>
@@ -116,9 +135,9 @@ function updateCountdowns() {
   });
 }
 
-function barTone(used) {
-  if (used >= 90) return "danger";
-  if (used >= 70) return "warning";
+function barTone(remaining) {
+  if (remaining <= 10) return "danger";
+  if (remaining <= 30) return "warning";
   return "";
 }
 

@@ -143,5 +143,8 @@
   },
   "usageUnavailableHint": {
     "message": "Claude n'a pas renvoyé de données d'utilisation. Ouvrez les paramètres de Claude, puis actualisez."
+  },
+  "refreshFailed": {
+    "message": "Échec de l'actualisation — affichage des dernières données connues."
   }
 }

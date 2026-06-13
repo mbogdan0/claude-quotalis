@@ -143,5 +143,8 @@
   },
   "usageUnavailableHint": {
     "message": "Claude hat keine Nutzungsdaten zurückgegeben. Öffne die Claude-Einstellungen und aktualisiere dann."
+  },
+  "refreshFailed": {
+    "message": "Aktualisierung fehlgeschlagen – letzte bekannte Daten werden angezeigt."
   }
 }

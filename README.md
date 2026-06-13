@@ -10,8 +10,9 @@ There are already bigger usage trackers on the market. This one is intentionally
 
 - Shows Claude session, weekly, and Opus weekly usage when Claude returns those values.
 - Displays reset timing in a compact popup.
-- Updates the toolbar badge with remaining session percentage.
+- Updates the toolbar badge with remaining session percentage — green while you have room, amber when it tightens, red when you are nearly out.
 - Refreshes locally on a short interval.
+- Labels your detected plan (Free, Pro, Max, Team, Enterprise) so you know which limits you are staring at.
 - Keeps the interface boring in the best possible way.
 
 ## Languages
@@ -35,7 +36,7 @@ Quotalis uses the minimum permissions needed for this job:
 
 The extension sends Claude cookies only to Claude API endpoints under `https://claude.ai/api/...`. It does not use analytics, remote scripts, third-party APIs, tab access, browsing history, downloads, clipboard access, native messaging, or broad host permissions.
 
-Stored data is limited to normalized usage percentages, reset timestamps, the detected plan label, and the active Claude organization id. It is not sold, shared, uploaded, or made exciting.
+Stored data is limited to normalized usage percentages, reset timestamps, the detected plan label, the active Claude organization id, which Claude endpoint the numbers came from, and a last-updated timestamp. It is not sold, shared, uploaded, or made exciting.
 
 ## Install locally
 
@@ -43,6 +44,8 @@ Stored data is limited to normalized usage percentages, reset timestamps, the de
 2. Enable Developer mode.
 3. Select Load unpacked.
 4. Choose the project folder.
+
+You need to be signed into Claude.ai in the same browser — Quotalis reads that existing session and nothing else.
 
 ## Build
 

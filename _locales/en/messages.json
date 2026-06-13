@@ -143,5 +143,8 @@
   },
   "usageUnavailableHint": {
     "message": "Claude did not return usage data. Open Claude settings, then refresh."
+  },
+  "refreshFailed": {
+    "message": "Couldn't refresh — showing last known data."
   }
 }

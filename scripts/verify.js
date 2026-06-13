@@ -39,6 +39,7 @@ const requiredMessageKeys = [
   "signInHint",
   "usageUnavailable",
   "usageUnavailableHint",
+  "refreshFailed",
 ];
 const publishableFiles = [
   "manifest.json",

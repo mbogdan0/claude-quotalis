@@ -143,5 +143,8 @@
   },
   "usageUnavailableHint": {
     "message": "Claude no devolvió datos de uso. Abre la configuración de Claude y luego actualiza."
+  },
+  "refreshFailed": {
+    "message": "No se pudo actualizar: se muestran los últimos datos conocidos."
   }
 }
