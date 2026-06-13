@@ -1,0 +1,11 @@
+{
+  "name": "quotalis-for-claude",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A minimal local Chrome extension for Claude.ai usage limits.",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "verify": "node scripts/verify.js"
+  }
+}
