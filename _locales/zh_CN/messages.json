@@ -1,0 +1,150 @@
+{
+  "extensionName": {
+    "message": "Quotalis for Claude"
+  },
+  "extensionDescription": {
+    "message": "极简的本地用量统计工具，用于查看 Claude.ai 的会话和每周用量上限。"
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "Claude 用量"
+  },
+  "refreshUsage": {
+    "message": "刷新用量"
+  },
+  "summaryPlanLabel": {
+    "message": "套餐"
+  },
+  "summaryUpdatedLabel": {
+    "message": "更新于"
+  },
+  "unknown": {
+    "message": "未知"
+  },
+  "never": {
+    "message": "从不"
+  },
+  "readingUsage": {
+    "message": "正在读取用量..."
+  },
+  "footerGithubAria": {
+    "message": "在 GitHub 上查看源代码"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "打开 Claude"
+  },
+  "sessionUsage": {
+    "message": "会话"
+  },
+  "weeklyUsage": {
+    "message": "每周"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus 每周"
+  },
+  "usagePercent": {
+    "message": "已用 $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "剩余 $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "无重置时间"
+  },
+  "now": {
+    "message": "刚刚"
+  },
+  "secondsAgo": {
+    "message": "$SECONDS$ 秒前",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "1 分钟前"
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ 分钟前",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "1 小时前"
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ 小时前",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "正在重置"
+  },
+  "resetInDaysHours": {
+    "message": "$DAYS$ 天 $HOURS$ 小时后重置",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "$HOURS$ 小时 $MINUTES$ 分钟后重置",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "$MINUTES$ 分钟后重置",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "未登录"
+  },
+  "signInHint": {
+    "message": "打开 Claude.ai 登录，然后刷新 Quotalis。"
+  },
+  "usageUnavailable": {
+    "message": "无法获取用量"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude 未返回用量数据。请打开 Claude 设置后再刷新。"
+  },
+  "refreshFailed": {
+    "message": "刷新失败 — 正在显示最近一次的数据。"
+  }
+}

@@ -19,11 +19,18 @@ There are already bigger usage trackers on the market. This one is intentionally
 
 Quotalis currently supports:
 
+- Chinese (Simplified)
 - English
 - French
 - German
+- Indonesian
+- Italian
+- Japanese
+- Portuguese (Brazil)
 - Spanish
+- Thai
 - Ukrainian
+- Vietnamese
 
 ## Privacy
 

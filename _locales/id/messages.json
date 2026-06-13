@@ -1,0 +1,150 @@
+{
+  "extensionName": {
+    "message": "Quotalis untuk Claude"
+  },
+  "extensionDescription": {
+    "message": "Pengukur penggunaan lokal minimal untuk batas sesi dan mingguan Claude.ai."
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "Penggunaan Claude"
+  },
+  "refreshUsage": {
+    "message": "Segarkan penggunaan"
+  },
+  "summaryPlanLabel": {
+    "message": "Paket"
+  },
+  "summaryUpdatedLabel": {
+    "message": "Diperbarui"
+  },
+  "unknown": {
+    "message": "Tidak diketahui"
+  },
+  "never": {
+    "message": "Tidak pernah"
+  },
+  "readingUsage": {
+    "message": "Membaca penggunaan..."
+  },
+  "footerGithubAria": {
+    "message": "Lihat kode sumber di GitHub"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "Buka Claude"
+  },
+  "sessionUsage": {
+    "message": "Sesi"
+  },
+  "weeklyUsage": {
+    "message": "Mingguan"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus mingguan"
+  },
+  "usagePercent": {
+    "message": "$PERCENT$% terpakai",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "$PERCENT$% tersisa",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "Tidak ada waktu reset"
+  },
+  "now": {
+    "message": "sekarang"
+  },
+  "secondsAgo": {
+    "message": "$SECONDS$ dtk lalu",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "1 menit lalu"
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ menit lalu",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "1 jam lalu"
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ jam lalu",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "Mereset"
+  },
+  "resetInDaysHours": {
+    "message": "Reset dalam $DAYS$ h $HOURS$ j",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "Reset dalam $HOURS$ j $MINUTES$ mnt",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "Reset dalam $MINUTES$ mnt",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "Belum masuk"
+  },
+  "signInHint": {
+    "message": "Buka Claude.ai, masuk, lalu segarkan Quotalis."
+  },
+  "usageUnavailable": {
+    "message": "Penggunaan tidak tersedia"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude tidak mengembalikan data penggunaan. Buka pengaturan Claude, lalu segarkan."
+  },
+  "refreshFailed": {
+    "message": "Tidak dapat menyegarkan — menampilkan data terakhir yang diketahui."
+  }
+}

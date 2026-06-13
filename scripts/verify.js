@@ -4,7 +4,7 @@ const vm = require("vm");
 const childProcess = require("child_process");
 
 const root = path.resolve(__dirname, "..");
-const requiredLocales = ["en", "uk", "de", "fr", "es"];
+const requiredLocales = ["en", "uk", "de", "fr", "es", "vi", "th", "id", "pt_BR", "ja", "zh_CN", "it"];
 const requiredMessageKeys = [
   "extensionName",
   "extensionDescription",

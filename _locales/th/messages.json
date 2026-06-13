@@ -1,0 +1,150 @@
+{
+  "extensionName": {
+    "message": "Quotalis สำหรับ Claude"
+  },
+  "extensionDescription": {
+    "message": "มาตรวัดการใช้งานในเครื่องแบบเรียบง่ายสำหรับขีดจำกัดต่อเซสชันและรายสัปดาห์ของ Claude.ai"
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "การใช้งาน Claude"
+  },
+  "refreshUsage": {
+    "message": "รีเฟรชการใช้งาน"
+  },
+  "summaryPlanLabel": {
+    "message": "แพ็กเกจ"
+  },
+  "summaryUpdatedLabel": {
+    "message": "อัปเดตแล้ว"
+  },
+  "unknown": {
+    "message": "ไม่ทราบ"
+  },
+  "never": {
+    "message": "ไม่เคย"
+  },
+  "readingUsage": {
+    "message": "กำลังอ่านการใช้งาน..."
+  },
+  "footerGithubAria": {
+    "message": "ดูซอร์สโค้ดบน GitHub"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "เปิด Claude"
+  },
+  "sessionUsage": {
+    "message": "เซสชัน"
+  },
+  "weeklyUsage": {
+    "message": "รายสัปดาห์"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus รายสัปดาห์"
+  },
+  "usagePercent": {
+    "message": "ใช้ไป $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "เหลือ $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "ไม่มีเวลารีเซ็ต"
+  },
+  "now": {
+    "message": "ตอนนี้"
+  },
+  "secondsAgo": {
+    "message": "$SECONDS$ วินาทีที่แล้ว",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "1 นาทีที่แล้ว"
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ นาทีที่แล้ว",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "1 ชั่วโมงที่แล้ว"
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ ชั่วโมงที่แล้ว",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "กำลังรีเซ็ต"
+  },
+  "resetInDaysHours": {
+    "message": "รีเซ็ตในอีก $DAYS$ วัน $HOURS$ ชม.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "รีเซ็ตในอีก $HOURS$ ชม. $MINUTES$ นาที",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "รีเซ็ตในอีก $MINUTES$ นาที",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "ยังไม่ได้เข้าสู่ระบบ"
+  },
+  "signInHint": {
+    "message": "เปิด Claude.ai เข้าสู่ระบบ แล้วรีเฟรช Quotalis"
+  },
+  "usageUnavailable": {
+    "message": "ไม่มีข้อมูลการใช้งาน"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude ไม่ได้ส่งข้อมูลการใช้งานกลับมา เปิดการตั้งค่า Claude แล้วรีเฟรช"
+  },
+  "refreshFailed": {
+    "message": "รีเฟรชไม่สำเร็จ — กำลังแสดงข้อมูลล่าสุดที่ทราบ"
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "extensionName": {
+    "message": "Quotalis cho Claude"
+  },
+  "extensionDescription": {
+    "message": "Bộ đo mức sử dụng cục bộ tối giản cho giới hạn theo phiên và hằng tuần của Claude.ai."
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "Mức sử dụng Claude"
+  },
+  "refreshUsage": {
+    "message": "Làm mới mức sử dụng"
+  },
+  "summaryPlanLabel": {
+    "message": "Gói"
+  },
+  "summaryUpdatedLabel": {
+    "message": "Đã cập nhật"
+  },
+  "unknown": {
+    "message": "Không rõ"
+  },
+  "never": {
+    "message": "Không bao giờ"
+  },
+  "readingUsage": {
+    "message": "Đang đọc mức sử dụng..."
+  },
+  "footerGithubAria": {
+    "message": "Xem mã nguồn trên GitHub"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "Mở Claude"
+  },
+  "sessionUsage": {
+    "message": "Phiên"
+  },
+  "weeklyUsage": {
+    "message": "Hằng tuần"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus hằng tuần"
+  },
+  "usagePercent": {
+    "message": "Đã dùng $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "Còn lại $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "Không có thời gian đặt lại"
+  },
+  "now": {
+    "message": "bây giờ"
+  },
+  "secondsAgo": {
+    "message": "$SECONDS$ giây trước",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "1 phút trước"
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ phút trước",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "1 giờ trước"
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ giờ trước",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "Đang đặt lại"
+  },
+  "resetInDaysHours": {
+    "message": "Đặt lại sau $DAYS$ ngày $HOURS$ giờ",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "Đặt lại sau $HOURS$ giờ $MINUTES$ phút",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "Đặt lại sau $MINUTES$ phút",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "Chưa đăng nhập"
+  },
+  "signInHint": {
+    "message": "Mở Claude.ai, đăng nhập, rồi làm mới Quotalis."
+  },
+  "usageUnavailable": {
+    "message": "Không có dữ liệu sử dụng"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude không trả về dữ liệu sử dụng. Mở phần cài đặt Claude, rồi làm mới."
+  },
+  "refreshFailed": {
+    "message": "Không thể làm mới — đang hiển thị dữ liệu gần nhất."
+  }
+}

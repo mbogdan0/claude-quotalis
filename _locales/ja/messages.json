@@ -1,0 +1,150 @@
+{
+  "extensionName": {
+    "message": "Quotalis for Claude"
+  },
+  "extensionDescription": {
+    "message": "Claude.ai のセッションおよび週間の利用上限を表示する、ローカルで動作するシンプルな使用量メーターです。"
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "Claude の使用量"
+  },
+  "refreshUsage": {
+    "message": "使用量を更新"
+  },
+  "summaryPlanLabel": {
+    "message": "プラン"
+  },
+  "summaryUpdatedLabel": {
+    "message": "更新日時"
+  },
+  "unknown": {
+    "message": "不明"
+  },
+  "never": {
+    "message": "なし"
+  },
+  "readingUsage": {
+    "message": "使用量を読み込み中..."
+  },
+  "footerGithubAria": {
+    "message": "GitHub でソースコードを表示"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "Claude を開く"
+  },
+  "sessionUsage": {
+    "message": "セッション"
+  },
+  "weeklyUsage": {
+    "message": "週間"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus 週間"
+  },
+  "usagePercent": {
+    "message": "$PERCENT$% 使用",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "残り $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "リセット時刻なし"
+  },
+  "now": {
+    "message": "たった今"
+  },
+  "secondsAgo": {
+    "message": "$SECONDS$ 秒前",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "1 分前"
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ 分前",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "1 時間前"
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ 時間前",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "リセット中"
+  },
+  "resetInDaysHours": {
+    "message": "$DAYS$ 日 $HOURS$ 時間後にリセット",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "$HOURS$ 時間 $MINUTES$ 分後にリセット",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "$MINUTES$ 分後にリセット",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "サインインしていません"
+  },
+  "signInHint": {
+    "message": "Claude.ai を開いてサインインし、Quotalis を更新してください。"
+  },
+  "usageUnavailable": {
+    "message": "使用量を取得できません"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude から使用量データが返されませんでした。Claude の設定を開いてから更新してください。"
+  },
+  "refreshFailed": {
+    "message": "更新できませんでした — 最後に取得したデータを表示しています。"
+  }
+}
