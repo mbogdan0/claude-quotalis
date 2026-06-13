@@ -4,8 +4,6 @@ Quotalis is a tiny Chrome extension for people who would rather know their Claud
 
 There are already bigger usage trackers on the market. This one is intentionally not trying to become a dashboard, a productivity platform, or a suspiciously enthusiastic SaaS funnel. I built it for myself because I wanted a quiet meter, a pinned badge, and fewer surprises.
 
-Open source: [github.com/mbogdan0/claude-quotalis](https://github.com/mbogdan0/claude-quotalis)
-
 ![Quotalis for Claude usage popup](quotalis-claude-usage-popup.jpg)
 
 ## What it does
