@@ -61,8 +61,8 @@ async function readClaudeUsage() {
 
   if (!cookieHeader) {
     return {
-      error: "Not signed in",
-      hint: "Open Claude.ai, sign in, then refresh Quotalis.",
+      error: message("notSignedIn"),
+      hint: message("signInHint"),
     };
   }
 
@@ -103,8 +103,8 @@ async function readClaudeUsage() {
   }
 
   return {
-    error: "Usage unavailable",
-    hint: "Claude did not return usage data. Open Claude settings, then refresh.",
+    error: message("usageUnavailable"),
+    hint: message("usageUnavailableHint"),
   };
 }
 
@@ -258,4 +258,8 @@ function updateBadge(usageData) {
   } else {
     chrome.action.setBadgeBackgroundColor({ color: "#287C5A" });
   }
+}
+
+function message(key, substitutions = []) {
+  return chrome.i18n.getMessage(key, substitutions.map(String)) || key;
 }

@@ -1,0 +1,147 @@
+{
+  "extensionName": {
+    "message": "Quotalis para Claude"
+  },
+  "extensionDescription": {
+    "message": "Medidor local mínimo de uso para los límites de sesión y semanales de Claude.ai."
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "Uso de Claude"
+  },
+  "refreshUsage": {
+    "message": "Actualizar uso"
+  },
+  "summaryPlanLabel": {
+    "message": "Plan"
+  },
+  "summaryUpdatedLabel": {
+    "message": "Actualizado"
+  },
+  "unknown": {
+    "message": "Desconocido"
+  },
+  "never": {
+    "message": "Nunca"
+  },
+  "readingUsage": {
+    "message": "Leyendo uso..."
+  },
+  "footerGithubAria": {
+    "message": "Ver código fuente en GitHub"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "Abrir Claude"
+  },
+  "sessionUsage": {
+    "message": "Sesión"
+  },
+  "weeklyUsage": {
+    "message": "Semanal"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus semanal"
+  },
+  "usagePercent": {
+    "message": "$PERCENT$% usado",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "$PERCENT$% restante",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "Sin hora de reinicio"
+  },
+  "now": {
+    "message": "ahora"
+  },
+  "secondsAgo": {
+    "message": "hace $SECONDS$ s",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "hace 1 minuto"
+  },
+  "minutesAgo": {
+    "message": "hace $MINUTES$ minutos",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "hace 1 hora"
+  },
+  "hoursAgo": {
+    "message": "hace $HOURS$ horas",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "Reiniciando"
+  },
+  "resetInDaysHours": {
+    "message": "Se reinicia en $DAYS$ d $HOURS$ h",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "Se reinicia en $HOURS$ h $MINUTES$ min",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "Se reinicia en $MINUTES$ min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "No has iniciado sesión"
+  },
+  "signInHint": {
+    "message": "Abre Claude.ai, inicia sesión y luego actualiza Quotalis."
+  },
+  "usageUnavailable": {
+    "message": "Uso no disponible"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude no devolvió datos de uso. Abre la configuración de Claude y luego actualiza."
+  }
+}

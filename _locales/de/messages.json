@@ -1,0 +1,147 @@
+{
+  "extensionName": {
+    "message": "Quotalis für Claude"
+  },
+  "extensionDescription": {
+    "message": "Minimaler lokaler Verbrauchszähler für Sitzungs- und Wochenlimits von Claude.ai."
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "Claude-Nutzung"
+  },
+  "refreshUsage": {
+    "message": "Nutzung aktualisieren"
+  },
+  "summaryPlanLabel": {
+    "message": "Tarif"
+  },
+  "summaryUpdatedLabel": {
+    "message": "Aktualisiert"
+  },
+  "unknown": {
+    "message": "Unbekannt"
+  },
+  "never": {
+    "message": "Nie"
+  },
+  "readingUsage": {
+    "message": "Nutzung wird gelesen..."
+  },
+  "footerGithubAria": {
+    "message": "Quellcode auf GitHub ansehen"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "Claude öffnen"
+  },
+  "sessionUsage": {
+    "message": "Sitzung"
+  },
+  "weeklyUsage": {
+    "message": "Wöchentlich"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus wöchentlich"
+  },
+  "usagePercent": {
+    "message": "$PERCENT$% genutzt",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "$PERCENT$% verbleibend",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "Keine Rücksetzzeit"
+  },
+  "now": {
+    "message": "jetzt"
+  },
+  "secondsAgo": {
+    "message": "vor $SECONDS$ s",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "vor 1 Minute"
+  },
+  "minutesAgo": {
+    "message": "vor $MINUTES$ Minuten",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "vor 1 Stunde"
+  },
+  "hoursAgo": {
+    "message": "vor $HOURS$ Stunden",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "Wird zurückgesetzt"
+  },
+  "resetInDaysHours": {
+    "message": "Zurücksetzung in $DAYS$ T $HOURS$ Std.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "Zurücksetzung in $HOURS$ Std. $MINUTES$ Min.",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "Zurücksetzung in $MINUTES$ Min.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "Nicht angemeldet"
+  },
+  "signInHint": {
+    "message": "Öffne Claude.ai, melde dich an und aktualisiere dann Quotalis."
+  },
+  "usageUnavailable": {
+    "message": "Nutzung nicht verfügbar"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude hat keine Nutzungsdaten zurückgegeben. Öffne die Claude-Einstellungen und aktualisiere dann."
+  }
+}

@@ -6,7 +6,7 @@ There are already bigger usage trackers on the market. This one is intentionally
 
 Open source: [github.com/mbogdan0/claude-quotalis](https://github.com/mbogdan0/claude-quotalis)
 
-![Quotalis for Claude screenshot](img.jpg)
+![Quotalis for Claude usage popup](quotalis-claude-usage-popup.jpg)
 
 ## What it does
 
@@ -15,6 +15,16 @@ Open source: [github.com/mbogdan0/claude-quotalis](https://github.com/mbogdan0/c
 - Updates the toolbar badge with remaining session percentage.
 - Refreshes locally on a short interval.
 - Keeps the interface boring in the best possible way.
+
+## Languages
+
+Quotalis currently supports:
+
+- English
+- French
+- German
+- Spanish
+- Ukrainian
 
 ## Privacy
 
@@ -42,7 +52,15 @@ Stored data is limited to normalized usage percentages, reset timestamps, the de
 npm run build
 ```
 
-The build script creates a Chrome Web Store ZIP in `dist/` and includes only the publishable extension files.
+The build script creates a Chrome Web Store ZIP in `dist/` using the current `manifest.json` version, for example `dist/quotalis-for-claude-1.0.0.zip`. It includes only the publishable extension files and locale message files.
+
+## Release package
+
+```sh
+npm run release -- 1.1.0
+```
+
+The release script updates `manifest.json` and `package.json` to the requested version, builds the versioned ZIP, and runs verification.
 
 ## Verify
 

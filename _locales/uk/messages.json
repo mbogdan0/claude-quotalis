@@ -1,0 +1,147 @@
+{
+  "extensionName": {
+    "message": "Quotalis для Claude"
+  },
+  "extensionDescription": {
+    "message": "Мінімальний локальний лічильник використання для сесійних і тижневих лімітів Claude.ai."
+  },
+  "popupEyebrow": {
+    "message": "Quotalis"
+  },
+  "popupHeading": {
+    "message": "Використання Claude"
+  },
+  "refreshUsage": {
+    "message": "Оновити використання"
+  },
+  "summaryPlanLabel": {
+    "message": "План"
+  },
+  "summaryUpdatedLabel": {
+    "message": "Оновлено"
+  },
+  "unknown": {
+    "message": "Невідомо"
+  },
+  "never": {
+    "message": "Ніколи"
+  },
+  "readingUsage": {
+    "message": "Зчитування використання..."
+  },
+  "footerGithubAria": {
+    "message": "Переглянути вихідний код на GitHub"
+  },
+  "github": {
+    "message": "GitHub"
+  },
+  "openClaude": {
+    "message": "Відкрити Claude"
+  },
+  "sessionUsage": {
+    "message": "Сесія"
+  },
+  "weeklyUsage": {
+    "message": "Тиждень"
+  },
+  "opusWeeklyUsage": {
+    "message": "Opus за тиждень"
+  },
+  "usagePercent": {
+    "message": "Використано $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "remainingPercent": {
+    "message": "Залишилося $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResetTime": {
+    "message": "Час скидання відсутній"
+  },
+  "now": {
+    "message": "щойно"
+  },
+  "secondsAgo": {
+    "message": "$SECONDS$ с тому",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "minuteAgo": {
+    "message": "1 хвилину тому"
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ хв тому",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "hourAgo": {
+    "message": "1 годину тому"
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ год тому",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetting": {
+    "message": "Скидання"
+  },
+  "resetInDaysHours": {
+    "message": "Скидання через $DAYS$ д $HOURS$ год",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      },
+      "hours": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInHoursMinutes": {
+    "message": "Скидання через $HOURS$ год $MINUTES$ хв",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "resetInMinutes": {
+    "message": "Скидання через $MINUTES$ хв",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "notSignedIn": {
+    "message": "Вхід не виконано"
+  },
+  "signInHint": {
+    "message": "Відкрийте Claude.ai, увійдіть, а потім оновіть Quotalis."
+  },
+  "usageUnavailable": {
+    "message": "Використання недоступне"
+  },
+  "usageUnavailableHint": {
+    "message": "Claude не повернув дані використання. Відкрийте налаштування Claude, а потім оновіть."
+  }
+}

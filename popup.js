@@ -7,9 +7,27 @@ let currentUsageData = null;
 document.addEventListener("DOMContentLoaded", initializePopup);
 
 function initializePopup() {
+  localizeDocument();
   refreshButton.addEventListener("click", refreshUsage);
   loadStoredUsage();
   setInterval(updateLiveLabels, 1000);
+}
+
+function localizeDocument() {
+  const language = chrome.i18n.getUILanguage();
+  if (language) document.documentElement.lang = language;
+
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = message(element.dataset.i18n);
+  });
+
+  document.querySelectorAll("[data-i18n-title]").forEach((element) => {
+    element.title = message(element.dataset.i18nTitle);
+  });
+
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+    element.setAttribute("aria-label", message(element.dataset.i18nAriaLabel));
+  });
 }
 
 function loadStoredUsage() {
@@ -51,12 +69,12 @@ function renderUsage(usageData) {
   }
 
   const rows = [
-    usageRow("Session", usageData.session),
-    usageRow("Weekly", usageData.weekly),
+    usageRow(message("sessionUsage"), usageData.session),
+    usageRow(message("weeklyUsage"), usageData.weekly),
   ];
 
   if (usageData.weeklyOpus) {
-    rows.push(usageRow("Opus weekly", usageData.weeklyOpus));
+    rows.push(usageRow(message("opusWeeklyUsage"), usageData.weeklyOpus));
   }
 
   content.innerHTML = rows.join("");
@@ -78,14 +96,14 @@ function usageRow(label, windowData) {
     <article class="usage-row">
       <div class="usage-head">
         <span class="usage-title">${escapeHtml(label)}</span>
-        <span class="usage-percent">${used}% used</span>
+        <span class="usage-percent">${escapeHtml(message("usagePercent", [used]))}</span>
       </div>
       <div class="track" aria-hidden="true">
         <div class="fill ${barTone(used)}" style="width: ${used}%"></div>
       </div>
       <div class="usage-meta">
-        <span>${remaining}% remaining</span>
-        <span data-reset="${escapeHtml(reset)}">${reset ? formatReset(reset) : "No reset time"}</span>
+        <span>${escapeHtml(message("remainingPercent", [remaining]))}</span>
+        <span data-reset="${escapeHtml(reset)}">${reset ? formatReset(reset) : message("noResetTime")}</span>
       </div>
     </article>
   `;
@@ -105,30 +123,30 @@ function barTone(used) {
 }
 
 function displayPlan(usageData) {
-  if (usageData.error) return "Unknown";
+  if (usageData.error) return message("unknown");
   if (!usageData.plan || usageData.plan === "Unknown") return "Pro";
   return usageData.plan;
 }
 
 function formatUpdatedRelative(timestamp) {
-  if (!timestamp) return "Never";
+  if (!timestamp) return message("never");
 
   const elapsed = Date.now() - timestamp;
-  if (elapsed < 5000) return "now";
+  if (elapsed < 5000) return message("now");
   if (elapsed < 60000) {
     const seconds = Math.max(5, Math.round(elapsed / 5000) * 5);
-    return `${seconds}s ago`;
+    return message("secondsAgo", [seconds]);
   }
 
   const minutes = Math.round(elapsed / 60000);
-  if (minutes <= 1) return "1 minute ago";
-  if (minutes < 60) return `${minutes} minutes ago`;
+  if (minutes <= 1) return message("minuteAgo");
+  if (minutes < 60) return message("minutesAgo", [minutes]);
 
   const hours = Math.round(elapsed / 3600000);
-  if (hours === 1) return "1 hour ago";
-  if (hours < 24) return `${hours} hours ago`;
+  if (hours === 1) return message("hourAgo");
+  if (hours < 24) return message("hoursAgo", [hours]);
 
-  return new Date(timestamp).toLocaleDateString([], {
+  return new Date(timestamp).toLocaleDateString(chrome.i18n.getUILanguage(), {
     month: "short",
     day: "numeric",
   });
@@ -136,18 +154,18 @@ function formatUpdatedRelative(timestamp) {
 
 function formatReset(value) {
   const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) return "No reset time";
+  if (!Number.isFinite(timestamp)) return message("noResetTime");
 
   const remaining = timestamp - Date.now();
-  if (remaining <= 0) return "Resetting";
+  if (remaining <= 0) return message("resetting");
 
   const days = Math.floor(remaining / 86400000);
   const hours = Math.floor((remaining % 86400000) / 3600000);
   const minutes = Math.floor((remaining % 3600000) / 60000);
 
-  if (days > 0) return `Resets in ${days}d ${hours}h`;
-  if (hours > 0) return `Resets in ${hours}h ${minutes}m`;
-  return `Resets in ${minutes}m`;
+  if (days > 0) return message("resetInDaysHours", [days, hours]);
+  if (hours > 0) return message("resetInHoursMinutes", [hours, minutes]);
+  return message("resetInMinutes", [minutes]);
 }
 
 function clampPercentage(value) {
@@ -158,4 +176,8 @@ function escapeHtml(value) {
   const element = document.createElement("div");
   element.textContent = String(value);
   return element.innerHTML;
+}
+
+function message(key, substitutions = []) {
+  return chrome.i18n.getMessage(key, substitutions.map(String)) || key;
 }

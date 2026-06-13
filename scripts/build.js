@@ -4,7 +4,8 @@ const zlib = require("zlib");
 
 const root = path.resolve(__dirname, "..");
 const distDir = path.join(root, "dist");
-const output = path.join(distDir, "quotalis-for-claude-1.0.0.zip");
+const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
+const output = path.join(distDir, `quotalis-for-claude-${manifest.version}.zip`);
 const entries = [
   "manifest.json",
   "background.js",
@@ -15,11 +16,25 @@ const entries = [
   "icons/icon16.png",
   "icons/icon48.png",
   "icons/icon128.png",
+  ...listLocaleFiles(),
 ];
 
 fs.mkdirSync(distDir, { recursive: true });
 fs.writeFileSync(output, createZip(entries));
 console.log(`Created ${path.relative(root, output)}`);
+
+function listLocaleFiles() {
+  const localesDir = path.join(root, "_locales");
+  if (!fs.existsSync(localesDir)) return [];
+
+  return fs
+    .readdirSync(localesDir)
+    .flatMap((locale) => {
+      const messagesFile = path.join(localesDir, locale, "messages.json");
+      return fs.existsSync(messagesFile) ? [`_locales/${locale}/messages.json`] : [];
+    })
+    .sort();
+}
 
 function createZip(files) {
   const localParts = [];

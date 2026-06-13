@@ -208,10 +208,15 @@ h1 {
 }
 
 .usage-percent {
-  font-size: 13px;
+  padding: 3px 7px;
+  border: 1px solid rgba(47, 118, 98, 0.18);
+  border-radius: 8px;
+  background: rgba(219, 236, 230, 0.78);
+  font-size: 15px;
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--accent-ink);
+  line-height: 1;
 }
 
 .track {
@@ -245,6 +250,11 @@ h1 {
 
 .usage-meta span {
   min-width: 0;
+}
+
+.usage-meta span:first-child {
+  color: var(--accent-ink);
+  font-weight: 650;
 }
 
 .usage-meta span:last-child {
@@ -281,9 +291,9 @@ h1 {
 }
 
 .footer {
-  gap: 10px;
+  gap: 8px;
   justify-content: space-between;
-  padding-top: 11px;
+  padding-top: 9px;
   border-top: 1px solid rgba(229, 223, 213, 0.82);
   color: var(--muted);
 }
@@ -291,18 +301,18 @@ h1 {
 .footer-link {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
+  min-height: 26px;
   border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
   text-decoration: none;
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .footer-link:hover,
 .footer-link:focus-visible {
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .footer-link:focus-visible {
@@ -311,46 +321,39 @@ h1 {
 }
 
 .footer-link-source {
-  gap: 6px;
-  padding: 0 9px;
-  border-color: rgba(216, 208, 195, 0.82);
-  background: rgba(255, 253, 250, 0.66);
-  color: #3f4541;
+  gap: 5px;
+  padding: 0 5px;
+  color: var(--muted);
 }
 
 .footer-link-source:hover,
 .footer-link-source:focus-visible {
-  border-color: rgba(47, 118, 98, 0.28);
-  background: #fffdfa;
-  color: var(--accent);
+  background: rgba(255, 253, 250, 0.58);
+  color: var(--accent-ink);
 }
 
 .footer-link-primary {
   gap: 5px;
-  padding: 0 10px 0 12px;
-  border-color: rgba(47, 118, 98, 0.3);
-  background: var(--accent-soft);
+  padding: 0 6px 0 7px;
   color: var(--accent-ink);
-  box-shadow: 0 1px 0 rgba(31, 35, 32, 0.04);
 }
 
 .footer-link-primary:hover,
 .footer-link-primary:focus-visible {
-  border-color: rgba(47, 118, 98, 0.48);
-  background: #d0e6de;
+  background: rgba(219, 236, 230, 0.56);
   color: var(--accent);
 }
 
 .footer-icon {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   flex: 0 0 auto;
   fill: currentColor;
 }
 
 .footer-arrow {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   flex: 0 0 auto;
   fill: none;
   stroke: currentColor;

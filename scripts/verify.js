@@ -4,6 +4,42 @@ const vm = require("vm");
 const childProcess = require("child_process");
 
 const root = path.resolve(__dirname, "..");
+const requiredLocales = ["en", "uk", "de", "fr", "es"];
+const requiredMessageKeys = [
+  "extensionName",
+  "extensionDescription",
+  "popupEyebrow",
+  "popupHeading",
+  "refreshUsage",
+  "summaryPlanLabel",
+  "summaryUpdatedLabel",
+  "unknown",
+  "never",
+  "readingUsage",
+  "footerGithubAria",
+  "github",
+  "openClaude",
+  "sessionUsage",
+  "weeklyUsage",
+  "opusWeeklyUsage",
+  "usagePercent",
+  "remainingPercent",
+  "noResetTime",
+  "now",
+  "secondsAgo",
+  "minuteAgo",
+  "minutesAgo",
+  "hourAgo",
+  "hoursAgo",
+  "resetting",
+  "resetInDaysHours",
+  "resetInHoursMinutes",
+  "resetInMinutes",
+  "notSignedIn",
+  "signInHint",
+  "usageUnavailable",
+  "usageUnavailableHint",
+];
 const publishableFiles = [
   "manifest.json",
   "background.js",
@@ -11,6 +47,7 @@ const publishableFiles = [
   "popup.css",
   "popup.js",
   "README.md",
+  ...requiredLocales.map((locale) => `_locales/${locale}/messages.json`),
 ];
 const expectedZipEntries = [
   "manifest.json",
@@ -22,6 +59,7 @@ const expectedZipEntries = [
   "icons/icon16.png",
   "icons/icon48.png",
   "icons/icon128.png",
+  ...requiredLocales.map((locale) => `_locales/${locale}/messages.json`),
 ];
 const forbiddenPatterns = [
   /\beval\s*\(/,
@@ -44,8 +82,12 @@ const forbiddenPatterns = [
 const errors = [];
 
 checkManifest();
+checkPackageVersion();
+checkLocales();
 checkJavaScriptSyntax("background.js");
 checkJavaScriptSyntax("popup.js");
+checkJavaScriptSyntax("scripts/build.js");
+checkJavaScriptSyntax("scripts/release.js");
 checkTextPatterns();
 checkUrls();
 checkZipContents();
@@ -61,10 +103,50 @@ console.log("Verification passed.");
 function checkManifest() {
   const manifest = JSON.parse(read("manifest.json"));
   expectEqual(manifest.manifest_version, 3, "Manifest version must be 3.");
+  expectEqual(manifest.name, "__MSG_extensionName__", "Manifest name must use Chrome i18n.");
+  expectEqual(manifest.description, "__MSG_extensionDescription__", "Manifest description must use Chrome i18n.");
+  expectEqual(manifest.default_locale, "en", "Manifest default locale must be en.");
+  expectEqual(manifest.action?.default_title, "__MSG_extensionName__", "Manifest action title must use Chrome i18n.");
   expectArrayEqual(manifest.permissions, ["cookies", "alarms", "storage"], "Unexpected permissions.");
   expectArrayEqual(manifest.host_permissions, ["https://claude.ai/*"], "Unexpected host permissions.");
   if (manifest.content_scripts) errors.push("Content scripts are not expected.");
   if (manifest.externally_connectable) errors.push("External connections are not expected.");
+}
+
+function checkPackageVersion() {
+  const manifest = JSON.parse(read("manifest.json"));
+  const packageJson = JSON.parse(read("package.json"));
+  expectEqual(packageJson.version, manifest.version, "Package version must match manifest version.");
+}
+
+function checkLocales() {
+  for (const locale of requiredLocales) {
+    const file = `_locales/${locale}/messages.json`;
+    if (!fs.existsSync(path.join(root, file))) {
+      errors.push(`Missing locale file: ${file}.`);
+      continue;
+    }
+
+    let messages;
+    try {
+      messages = JSON.parse(read(file));
+    } catch (error) {
+      errors.push(`${file} has invalid JSON: ${error.message}`);
+      continue;
+    }
+
+    for (const key of requiredMessageKeys) {
+      const entry = messages[key];
+      if (!entry || typeof entry.message !== "string" || !entry.message.trim()) {
+        errors.push(`${file} is missing message key ${key}.`);
+      }
+    }
+
+    const extraKeys = Object.keys(messages).filter((key) => !requiredMessageKeys.includes(key));
+    if (extraKeys.length) {
+      errors.push(`${file} contains unexpected message keys: ${extraKeys.join(", ")}.`);
+    }
+  }
 }
 
 function checkJavaScriptSyntax(file) {
@@ -103,7 +185,8 @@ function checkUrls() {
 }
 
 function checkZipContents() {
-  const zipPath = path.join(root, "dist", "quotalis-for-claude-1.0.0.zip");
+  const manifest = JSON.parse(read("manifest.json"));
+  const zipPath = path.join(root, "dist", `quotalis-for-claude-${manifest.version}.zip`);
   if (!fs.existsSync(zipPath)) return;
 
   const output = childProcess.execFileSync("unzip", ["-Z1", zipPath], {

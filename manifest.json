@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Quotalis for Claude",
+  "name": "__MSG_extensionName__",
   "version": "1.0.0",
-  "description": "Minimal local usage meter for Claude.ai session and weekly limits.",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "permissions": [
     "cookies",
     "alarms",
@@ -15,7 +16,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Quotalis for Claude",
+    "default_title": "__MSG_extensionName__",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
