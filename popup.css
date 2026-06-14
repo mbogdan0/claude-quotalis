@@ -175,12 +175,30 @@ h1 {
   box-shadow: 0 8px 26px rgba(31, 35, 32, 0.045);
 }
 
+.summary.is-plan-hidden {
+  justify-content: flex-start;
+}
+
 .summary-item {
   min-width: 0;
 }
 
+.summary-item[hidden] {
+  display: none;
+}
+
 .summary-item-right {
+  margin-left: auto;
   text-align: right;
+}
+
+.summary.is-plan-hidden .summary-item-right {
+  margin-left: 0;
+  text-align: left;
+}
+
+.summary.is-plan-hidden strong {
+  max-width: none;
 }
 
 .label {

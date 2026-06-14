@@ -165,9 +165,11 @@ function normalizeUsageResponse(payload, source) {
   const session = normalizeWindow(payload.five_hour);
   const weekly = normalizeWindow(payload.seven_day);
   const weeklyOpus = payload.seven_day_opus ? normalizeWindow(payload.seven_day_opus) : null;
+  const plan = detectPlan(payload);
 
   return {
-    plan: detectPlan(payload) || "Pro",
+    plan,
+    planDetected: Boolean(plan),
     session,
     weekly,
     weeklyOpus,
@@ -176,8 +178,10 @@ function normalizeUsageResponse(payload, source) {
 }
 
 function normalizeBootstrapResponse(payload) {
+  const plan = detectPlan(payload);
   const usage = {
-    plan: detectPlan(payload) || "Pro",
+    plan,
+    planDetected: Boolean(plan),
     session: { percentage: 0, resetsAt: null },
     weekly: null,
     weeklyOpus: null,
@@ -188,7 +192,11 @@ function normalizeBootstrapResponse(payload) {
     ?.organization;
 
   if (organization) {
-    usage.plan = detectOrganizationPlan(organization) || usage.plan;
+    const organizationPlan = detectOrganizationPlan(organization);
+    if (organizationPlan) {
+      usage.plan = organizationPlan;
+      usage.planDetected = true;
+    }
     if (organization.uuid) chrome.storage.local.set({ orgId: organization.uuid });
   }
 
@@ -216,31 +224,104 @@ function messageLimitToPercentage(type) {
   return 0;
 }
 
-function detectPlan(value) {
-  const text = JSON.stringify(value || {}).toLowerCase();
-  if (text.includes("max_20x")) return "Max 20x";
-  if (text.includes("max_5x")) return "Max 5x";
-  if (text.includes("enterprise")) return "Enterprise";
-  if (text.includes("team")) return "Team";
-  if (text.includes("claude_pro") || text.includes('"pro"')) return "Pro";
-  if (text.includes("claude_free") || text.includes('"free"')) return "Free";
-  if (text.includes('"max"')) return "Max";
+function detectPlan(value, options = {}) {
+  const signals = collectPlanSignals(value, options);
+  for (const signal of signals) {
+    const plan = planFromSignal(signal);
+    if (plan) return plan;
+  }
+
   return null;
 }
 
 function detectOrganizationPlan(organization) {
-  const billing = (organization.billing_type || organization.subscription_type || "").toLowerCase();
-  const capabilities = JSON.stringify(organization.capabilities || {}).toLowerCase();
-  const text = `${billing} ${capabilities}`;
+  const directPlan = detectPlan([
+    organization.billing_type,
+    organization.subscription_type,
+    organization.plan,
+    organization.plan_type,
+    organization.tier,
+  ]);
+
+  return directPlan || detectPlan(organization.capabilities, { includeTruthyKeys: true });
+}
+
+function collectPlanSignals(value, options = {}, signals = [], key = "") {
+  if (value === null || value === undefined) return signals;
+
+  if (typeof value === "string") {
+    if (!key || isPlanSignalKey(key) || isExplicitPlanLiteral(value)) signals.push(value);
+    return signals;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectPlanSignals(item, options, signals, key));
+    return signals;
+  }
+
+  if (typeof value === "object") {
+    Object.entries(value).forEach(([key, item]) => {
+      if (options.includeTruthyKeys && item === true && isExplicitPlanLiteral(key)) signals.push(key);
+      collectPlanSignals(item, options, signals, key);
+    });
+  }
+
+  return signals;
+}
+
+function planFromSignal(signal) {
+  const text = normalizePlanSignal(signal);
+  if (!text) return null;
 
   if (text.includes("max_20x")) return "Max 20x";
   if (text.includes("max_5x")) return "Max 5x";
-  if (text.includes("max")) return "Max";
-  if (text.includes("enterprise")) return "Enterprise";
-  if (text.includes("team")) return "Team";
-  if (text.includes("pro")) return "Pro";
-  if (text.includes("free")) return "Free";
-  return billing || null;
+
+  const tokens = text.split("_").filter(Boolean);
+  if (tokens.includes("enterprise")) return "Enterprise";
+  if (tokens.includes("team")) return "Team";
+  if (tokens.includes("pro")) return "Pro";
+  if (tokens.includes("free")) return "Free";
+  if (text === "max" || text === "claude_max") return "Max";
+  return null;
+}
+
+function normalizePlanSignal(signal) {
+  return String(signal)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function isPlanSignalKey(key) {
+  const text = normalizePlanSignal(key);
+  const tokens = text.split("_").filter(Boolean);
+  return (
+    tokens.includes("plan") ||
+    tokens.includes("subscription") ||
+    tokens.includes("billing") ||
+    tokens.includes("tier") ||
+    tokens.includes("sku") ||
+    tokens.includes("product") ||
+    text === "type" ||
+    text.endsWith("_type")
+  );
+}
+
+function isExplicitPlanLiteral(value) {
+  const text = normalizePlanSignal(value);
+  return (
+    text === "max" ||
+    text === "claude_max" ||
+    text === "enterprise" ||
+    text === "team" ||
+    text === "pro" ||
+    text === "free" ||
+    text === "claude_pro" ||
+    text === "claude_free" ||
+    text.includes("max_20x") ||
+    text.includes("max_5x")
+  );
 }
 
 function clampPercentage(value) {

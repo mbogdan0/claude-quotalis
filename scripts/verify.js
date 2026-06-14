@@ -92,6 +92,8 @@ checkJavaScriptSyntax("scripts/release.js");
 checkTextPatterns();
 checkUrls();
 checkZipContents();
+checkUsagePlanNormalization();
+checkPopupPlanVisibility();
 
 if (errors.length) {
   console.error("Verification failed:");
@@ -198,12 +200,266 @@ function checkZipContents() {
   expectArrayEqual(entries, [...expectedZipEntries].sort(), "ZIP contains unexpected files.");
 }
 
+function checkUsagePlanNormalization() {
+  const background = loadBackgroundExports();
+  const usagePayload = {
+    five_hour: {
+      utilization: 0,
+      resets_at: null,
+    },
+    seven_day: {
+      utilization: 0,
+      resets_at: "2026-06-15T20:00:00.413366+00:00",
+    },
+    seven_day_oauth_apps: null,
+    seven_day_opus: null,
+    seven_day_sonnet: null,
+    seven_day_cowork: null,
+    seven_day_omelette: null,
+    tangelo: null,
+    iguana_necktie: null,
+    omelette_promotional: null,
+    cinder_cove: null,
+    extra_usage: null,
+  };
+
+  const unknownPlan = background.normalizeUsageResponse(usagePayload, "usage");
+  expectEqual(unknownPlan.plan, null, "Usage payload without a plan signal must not guess a plan.");
+  expectEqual(unknownPlan.planDetected, false, "Usage payload without a plan signal must set planDetected false.");
+
+  const freePlan = background.normalizeUsageResponse(
+    { ...usagePayload, subscription_type: "claude_free" },
+    "usage"
+  );
+  expectEqual(freePlan.plan, "Free", "Explicit claude_free signal must normalize to Free.");
+  expectEqual(freePlan.planDetected, true, "Explicit claude_free signal must set planDetected true.");
+
+  const proPlan = background.normalizeUsageResponse({ ...usagePayload, plan: "claude_pro" }, "usage");
+  expectEqual(proPlan.plan, "Pro", "Explicit claude_pro signal must normalize to Pro.");
+  expectEqual(proPlan.planDetected, true, "Explicit claude_pro signal must set planDetected true.");
+
+  expectEqual(
+    background.detectPlan({ feature: "omelette_promotional" }),
+    null,
+    "Promotional strings must not be treated as Pro."
+  );
+  expectEqual(
+    background.detectOrganizationPlan({ capabilities: { omelette_promotional: true } }),
+    null,
+    "Promotional capability keys must not be treated as Pro."
+  );
+  expectEqual(
+    background.detectOrganizationPlan({ capabilities: { claude_pro: true } }),
+    "Pro",
+    "Explicit claude_pro capability keys must normalize to Pro."
+  );
+}
+
+function checkPopupPlanVisibility() {
+  const popup = loadPopupExports();
+
+  popup.exports.renderUsage({
+    plan: "Pro",
+    session: { percentage: 0, resetsAt: null },
+    lastUpdated: Date.now(),
+  });
+  expectEqual(
+    popup.elements.planSummaryItem.hidden,
+    true,
+    "Cached usage without planDetected must hide the Plan field."
+  );
+  expectEqual(
+    popup.elements.summary.classList.contains("is-plan-hidden"),
+    true,
+    "Hidden Plan state must use the compact summary layout."
+  );
+
+  popup.exports.renderUsage({
+    plan: "Free",
+    planDetected: true,
+    session: { percentage: 0, resetsAt: null },
+    lastUpdated: Date.now(),
+  });
+  expectEqual(popup.elements.planSummaryItem.hidden, false, "Detected plans must show the Plan field.");
+  expectEqual(popup.elements.planValue.textContent, "Free", "Detected plans must render their label.");
+  expectEqual(
+    popup.elements.summary.classList.contains("is-plan-hidden"),
+    false,
+    "Visible Plan state must use the two-column summary layout."
+  );
+
+  popup.exports.renderUsage({
+    error: "Usage unavailable",
+    hint: "Try again later.",
+    lastUpdated: Date.now(),
+  });
+  expectEqual(popup.elements.planSummaryItem.hidden, true, "Error states must hide the Plan field.");
+  expectTruthy(popup.elements.updatedValue.textContent, "Error states must still render the Updated field.");
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("Usage unavailable"),
+    "Error states must still render the error message."
+  );
+}
+
+function loadBackgroundExports() {
+  const listener = { addListener() {} };
+  const context = {
+    chrome: {
+      runtime: {
+        onInstalled: listener,
+        onStartup: listener,
+        onMessage: listener,
+      },
+      alarms: {
+        onAlarm: listener,
+        create() {},
+      },
+      cookies: {
+        getAll: async () => [],
+        get: async () => null,
+      },
+      storage: {
+        local: {
+          get: async () => ({}),
+          set: async () => {},
+        },
+      },
+      action: {
+        setBadgeText() {},
+        setBadgeBackgroundColor() {},
+      },
+      i18n: {
+        getMessage: (key) => key,
+      },
+    },
+    fetch: async () => ({ ok: false }),
+  };
+
+  return loadScriptExports("background.js", context, [
+    "normalizeUsageResponse",
+    "detectPlan",
+    "detectOrganizationPlan",
+  ]);
+}
+
+function loadPopupExports() {
+  const elements = {};
+  const document = {
+    documentElement: {},
+    addEventListener() {},
+    querySelectorAll: () => [],
+    getElementById(id) {
+      if (!elements[id]) elements[id] = createElementStub(id);
+      return elements[id];
+    },
+    createElement: () => createElementStub(),
+  };
+
+  const exports = loadScriptExports(
+    "popup.js",
+    {
+      document,
+      chrome: {
+        i18n: {
+          getUILanguage: () => "en",
+          getMessage: (key, substitutions = []) =>
+            substitutions.length ? `${key} ${substitutions.join(" ")}` : key,
+        },
+        runtime: {
+          sendMessage() {},
+        },
+        storage: {
+          local: {
+            get() {},
+          },
+        },
+      },
+      setInterval() {},
+    },
+    ["renderUsage", "shouldShowPlan"]
+  );
+
+  return {
+    exports,
+    elements,
+  };
+}
+
+function loadScriptExports(file, context, names) {
+  vm.createContext(context);
+  const exportSource = names.map((name) => `${JSON.stringify(name)}: ${name}`).join(",");
+  new vm.Script(`${read(file)}\nthis.__exports = {${exportSource}};`, { filename: file }).runInContext(
+    context
+  );
+  return context.__exports;
+}
+
+function createElementStub(id = "") {
+  let html = "";
+  let text = "";
+  const classes = new Set();
+
+  return {
+    id,
+    hidden: false,
+    disabled: false,
+    title: "",
+    dataset: {},
+    classList: {
+      add(name) {
+        classes.add(name);
+      },
+      remove(name) {
+        classes.delete(name);
+      },
+      toggle(name, force) {
+        const shouldAdd = force === undefined ? !classes.has(name) : Boolean(force);
+        if (shouldAdd) classes.add(name);
+        else classes.delete(name);
+        return shouldAdd;
+      },
+      contains(name) {
+        return classes.has(name);
+      },
+    },
+    addEventListener() {},
+    setAttribute(name, value) {
+      this[name] = value;
+    },
+    get innerHTML() {
+      return html || escapeForTest(text);
+    },
+    set innerHTML(value) {
+      html = String(value);
+    },
+    get textContent() {
+      return text;
+    },
+    set textContent(value) {
+      text = String(value);
+      html = "";
+    },
+  };
+}
+
+function escapeForTest(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");
 }
 
 function expectEqual(actual, expected, message) {
   if (actual !== expected) errors.push(`${message} Expected ${expected}, got ${actual}.`);
+}
+
+function expectTruthy(value, message) {
+  if (!value) errors.push(message);
 }
 
 function expectArrayEqual(actual, expected, message) {

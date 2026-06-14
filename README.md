@@ -12,7 +12,7 @@ There are already bigger usage trackers on the market. This one is intentionally
 - Displays reset timing in a compact popup.
 - Updates the toolbar badge with remaining session percentage — green while you have room, amber when it tightens, red when you are nearly out.
 - Refreshes locally on a short interval.
-- Labels your detected plan (Free, Pro, Max, Team, Enterprise) so you know which limits you are staring at.
+- Labels your plan only when Claude exposes a clear plan signal, instead of guessing from usage data.
 - Keeps the interface boring in the best possible way.
 
 ## Languages
@@ -43,7 +43,7 @@ Quotalis uses the minimum permissions needed for this job:
 
 The extension sends Claude cookies only to Claude API endpoints under `https://claude.ai/api/...`. It does not use analytics, remote scripts, third-party APIs, tab access, browsing history, downloads, clipboard access, native messaging, or broad host permissions.
 
-Stored data is limited to normalized usage percentages, reset timestamps, the detected plan label, the active Claude organization id, which Claude endpoint the numbers came from, and a last-updated timestamp. It is not sold, shared, uploaded, or made exciting.
+Stored data is limited to normalized usage percentages, reset timestamps, the detected plan label when available, whether a plan was detected, the active Claude organization id, which Claude endpoint the numbers came from, and a last-updated timestamp. It is not sold, shared, uploaded, or made exciting.
 
 ## Install locally
 

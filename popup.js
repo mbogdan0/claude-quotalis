@@ -1,4 +1,6 @@
 const content = document.getElementById("content");
+const summary = document.getElementById("summary");
+const planSummaryItem = document.getElementById("planSummaryItem");
 const planValue = document.getElementById("planValue");
 const updatedValue = document.getElementById("updatedValue");
 const refreshButton = document.getElementById("refreshButton");
@@ -63,7 +65,7 @@ function showLoading() {
 
 function renderUsage(usageData) {
   currentUsageData = usageData;
-  planValue.textContent = displayPlan(usageData);
+  applyPlanState(usageData);
   updatedValue.textContent = formatUpdatedRelative(usageData.lastUpdated);
   applyStaleState(usageData);
 
@@ -141,10 +143,15 @@ function barTone(remaining) {
   return "";
 }
 
-function displayPlan(usageData) {
-  if (usageData.error) return message("unknown");
-  if (!usageData.plan || usageData.plan === "Unknown") return "Pro";
-  return usageData.plan;
+function applyPlanState(usageData) {
+  const showPlan = shouldShowPlan(usageData);
+  summary.classList.toggle("is-plan-hidden", !showPlan);
+  planSummaryItem.hidden = !showPlan;
+  planValue.textContent = showPlan ? usageData.plan : "";
+}
+
+function shouldShowPlan(usageData) {
+  return Boolean(usageData?.planDetected === true && usageData.plan);
 }
 
 function formatUpdatedRelative(timestamp) {
