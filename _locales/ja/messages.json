@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "使用量を更新"
   },
-  "summaryPlanLabel": {
-    "message": "プラン"
-  },
   "summaryUpdatedLabel": {
     "message": "更新日時"
-  },
-  "unknown": {
-    "message": "不明"
   },
   "never": {
     "message": "なし"

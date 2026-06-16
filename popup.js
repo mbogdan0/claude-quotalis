@@ -1,7 +1,4 @@
 const content = document.getElementById("content");
-const summary = document.getElementById("summary");
-const planSummaryItem = document.getElementById("planSummaryItem");
-const planValue = document.getElementById("planValue");
 const updatedValue = document.getElementById("updatedValue");
 const refreshButton = document.getElementById("refreshButton");
 let currentUsageData = null;
@@ -65,7 +62,6 @@ function showLoading() {
 
 function renderUsage(usageData) {
   currentUsageData = usageData;
-  applyPlanState(usageData);
   updatedValue.textContent = formatUpdatedRelative(usageData.lastUpdated);
   applyStaleState(usageData);
 
@@ -80,14 +76,14 @@ function renderUsage(usageData) {
     return;
   }
 
-  const rows = [usageRow(message("sessionUsage"), usageData.session)];
+  const rows = [usageRow(message("sessionUsage"), usageData.session, "session")];
 
   if (usageData.weekly) {
-    rows.push(usageRow(message("weeklyUsage"), usageData.weekly));
+    rows.push(usageRow(message("weeklyUsage"), usageData.weekly, "weekly"));
   }
 
   if (usageData.weeklyOpus) {
-    rows.push(usageRow(message("opusWeeklyUsage"), usageData.weeklyOpus));
+    rows.push(usageRow(message("opusWeeklyUsage"), usageData.weeklyOpus, "weekly"));
   }
 
   content.innerHTML = rows.join("");
@@ -107,10 +103,11 @@ function updateLiveLabels() {
   }
 }
 
-function usageRow(label, windowData) {
+function usageRow(label, windowData, toneMode) {
   const used = clampPercentage(windowData?.percentage || 0);
   const remaining = 100 - used;
   const reset = windowData?.resetsAt || "";
+  const tone = barTone(remaining, reset, toneMode);
 
   // "Remaining" is the primary number everywhere; the bar depletes as you consume.
   return `
@@ -120,7 +117,7 @@ function usageRow(label, windowData) {
         <span class="usage-percent">${escapeHtml(message("remainingPercent", [remaining]))}</span>
       </div>
       <div class="track" role="progressbar" aria-valuenow="${remaining}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(label)}">
-        <div class="fill ${barTone(remaining)}" style="width: ${remaining}%"></div>
+        <div class="fill ${tone}" style="width: ${remaining}%"></div>
       </div>
       <div class="usage-meta">
         <span>${escapeHtml(message("usagePercent", [used]))}</span>
@@ -137,21 +134,34 @@ function updateCountdowns() {
   });
 }
 
-function barTone(remaining) {
+function barTone(remaining, reset, toneMode = "session") {
+  const value = clampPercentage(remaining);
+
+  if (toneMode === "weekly") {
+    const resetIn = millisecondsUntil(reset);
+
+    if (Number.isFinite(resetIn)) {
+      if (resetIn <= 0) return "";
+      if (resetIn <= 86400000 && value > 5) return "";
+      if (resetIn <= 259200000 && value >= 20) return "";
+    }
+  }
+
+  return quotaTone(value);
+}
+
+function quotaTone(remaining) {
   if (remaining <= 10) return "danger";
   if (remaining <= 30) return "warning";
+  if (remaining <= 50) return "attention";
   return "";
 }
 
-function applyPlanState(usageData) {
-  const showPlan = shouldShowPlan(usageData);
-  summary.classList.toggle("is-plan-hidden", !showPlan);
-  planSummaryItem.hidden = !showPlan;
-  planValue.textContent = showPlan ? usageData.plan : "";
-}
-
-function shouldShowPlan(usageData) {
-  return Boolean(usageData?.planDetected === true && usageData.plan);
+function millisecondsUntil(value) {
+  if (!value) return NaN;
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return NaN;
+  return timestamp - Date.now();
 }
 
 function formatUpdatedRelative(timestamp) {

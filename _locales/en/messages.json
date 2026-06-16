@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "Refresh usage"
   },
-  "summaryPlanLabel": {
-    "message": "Plan"
-  },
   "summaryUpdatedLabel": {
     "message": "Updated"
-  },
-  "unknown": {
-    "message": "Unknown"
   },
   "never": {
     "message": "Never"

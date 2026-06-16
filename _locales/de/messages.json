@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "Nutzung aktualisieren"
   },
-  "summaryPlanLabel": {
-    "message": "Tarif"
-  },
   "summaryUpdatedLabel": {
     "message": "Aktualisiert"
-  },
-  "unknown": {
-    "message": "Unbekannt"
   },
   "never": {
     "message": "Nie"

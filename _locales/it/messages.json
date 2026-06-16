@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "Aggiorna utilizzo"
   },
-  "summaryPlanLabel": {
-    "message": "Piano"
-  },
   "summaryUpdatedLabel": {
     "message": "Aggiornato"
-  },
-  "unknown": {
-    "message": "Sconosciuto"
   },
   "never": {
     "message": "Mai"

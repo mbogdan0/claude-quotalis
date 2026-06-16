@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "刷新用量"
   },
-  "summaryPlanLabel": {
-    "message": "套餐"
-  },
   "summaryUpdatedLabel": {
     "message": "更新于"
-  },
-  "unknown": {
-    "message": "未知"
   },
   "never": {
     "message": "从不"

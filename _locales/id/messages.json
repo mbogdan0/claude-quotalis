@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "Segarkan penggunaan"
   },
-  "summaryPlanLabel": {
-    "message": "Paket"
-  },
   "summaryUpdatedLabel": {
     "message": "Diperbarui"
-  },
-  "unknown": {
-    "message": "Tidak diketahui"
   },
   "never": {
     "message": "Tidak pernah"

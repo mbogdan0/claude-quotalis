@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "Оновити використання"
   },
-  "summaryPlanLabel": {
-    "message": "План"
-  },
   "summaryUpdatedLabel": {
     "message": "Оновлено"
-  },
-  "unknown": {
-    "message": "Невідомо"
   },
   "never": {
     "message": "Ніколи"

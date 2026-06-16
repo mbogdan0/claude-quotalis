@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "Làm mới mức sử dụng"
   },
-  "summaryPlanLabel": {
-    "message": "Gói"
-  },
   "summaryUpdatedLabel": {
     "message": "Đã cập nhật"
-  },
-  "unknown": {
-    "message": "Không rõ"
   },
   "never": {
     "message": "Không bao giờ"

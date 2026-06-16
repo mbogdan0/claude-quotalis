@@ -11,9 +11,7 @@ const requiredMessageKeys = [
   "popupEyebrow",
   "popupHeading",
   "refreshUsage",
-  "summaryPlanLabel",
   "summaryUpdatedLabel",
-  "unknown",
   "never",
   "readingUsage",
   "footerGithubAria",
@@ -92,8 +90,10 @@ checkJavaScriptSyntax("scripts/release.js");
 checkTextPatterns();
 checkUrls();
 checkZipContents();
-checkUsagePlanNormalization();
-checkPopupPlanVisibility();
+checkUsageNormalization();
+checkPopupSummaryStatus();
+checkBadgeColors();
+checkPopupBarTones();
 
 if (errors.length) {
   console.error("Verification failed:");
@@ -200,7 +200,7 @@ function checkZipContents() {
   expectArrayEqual(entries, [...expectedZipEntries].sort(), "ZIP contains unexpected files.");
 }
 
-function checkUsagePlanNormalization() {
+function checkUsageNormalization() {
   const background = loadBackgroundExports();
   const usagePayload = {
     five_hour: {
@@ -223,69 +223,43 @@ function checkUsagePlanNormalization() {
     extra_usage: null,
   };
 
-  const unknownPlan = background.normalizeUsageResponse(usagePayload, "usage");
-  expectEqual(unknownPlan.plan, null, "Usage payload without a plan signal must not guess a plan.");
-  expectEqual(unknownPlan.planDetected, false, "Usage payload without a plan signal must set planDetected false.");
-
-  const freePlan = background.normalizeUsageResponse(
-    { ...usagePayload, subscription_type: "claude_free" },
+  const normalized = background.normalizeUsageResponse(
+    { ...usagePayload, plan: "claude_pro", subscription_type: "claude_free" },
     "usage"
   );
-  expectEqual(freePlan.plan, "Free", "Explicit claude_free signal must normalize to Free.");
-  expectEqual(freePlan.planDetected, true, "Explicit claude_free signal must set planDetected true.");
-
-  const proPlan = background.normalizeUsageResponse({ ...usagePayload, plan: "claude_pro" }, "usage");
-  expectEqual(proPlan.plan, "Pro", "Explicit claude_pro signal must normalize to Pro.");
-  expectEqual(proPlan.planDetected, true, "Explicit claude_pro signal must set planDetected true.");
-
+  expectEqual(normalized.session.percentage, 0, "Usage payload must still normalize session utilization.");
+  expectEqual(normalized.weekly.percentage, 0, "Usage payload must still normalize weekly utilization.");
+  expectEqual(normalized.source, "usage", "Usage payload must preserve its source.");
   expectEqual(
-    background.detectPlan({ feature: "omelette_promotional" }),
-    null,
-    "Promotional strings must not be treated as Pro."
+    Object.prototype.hasOwnProperty.call(normalized, "plan"),
+    false,
+    "Usage normalization must not keep plan labels."
   );
   expectEqual(
-    background.detectOrganizationPlan({ capabilities: { omelette_promotional: true } }),
-    null,
-    "Promotional capability keys must not be treated as Pro."
-  );
-  expectEqual(
-    background.detectOrganizationPlan({ capabilities: { claude_pro: true } }),
-    "Pro",
-    "Explicit claude_pro capability keys must normalize to Pro."
+    Object.prototype.hasOwnProperty.call(normalized, "planDetected"),
+    false,
+    "Usage normalization must not keep plan detection state."
   );
 }
 
-function checkPopupPlanVisibility() {
+function checkPopupSummaryStatus() {
   const popup = loadPopupExports();
 
   popup.exports.renderUsage({
     plan: "Pro",
-    session: { percentage: 0, resetsAt: null },
-    lastUpdated: Date.now(),
-  });
-  expectEqual(
-    popup.elements.planSummaryItem.hidden,
-    true,
-    "Cached usage without planDetected must hide the Plan field."
-  );
-  expectEqual(
-    popup.elements.summary.classList.contains("is-plan-hidden"),
-    true,
-    "Hidden Plan state must use the compact summary layout."
-  );
-
-  popup.exports.renderUsage({
-    plan: "Free",
     planDetected: true,
     session: { percentage: 0, resetsAt: null },
     lastUpdated: Date.now(),
   });
-  expectEqual(popup.elements.planSummaryItem.hidden, false, "Detected plans must show the Plan field.");
-  expectEqual(popup.elements.planValue.textContent, "Free", "Detected plans must render their label.");
   expectEqual(
-    popup.elements.summary.classList.contains("is-plan-hidden"),
+    popup.elements.updatedValue.textContent,
+    "now",
+    "Plan fields must not affect the compact Updated status."
+  );
+  expectEqual(
+    popup.elements.content.innerHTML.includes("planValue"),
     false,
-    "Visible Plan state must use the two-column summary layout."
+    "Plan fields must not render in the popup content."
   );
 
   popup.exports.renderUsage({
@@ -293,7 +267,6 @@ function checkPopupPlanVisibility() {
     hint: "Try again later.",
     lastUpdated: Date.now(),
   });
-  expectEqual(popup.elements.planSummaryItem.hidden, true, "Error states must hide the Plan field.");
   expectTruthy(popup.elements.updatedValue.textContent, "Error states must still render the Updated field.");
   expectTruthy(
     popup.elements.content.innerHTML.includes("Usage unavailable"),
@@ -301,7 +274,66 @@ function checkPopupPlanVisibility() {
   );
 }
 
-function loadBackgroundExports() {
+function checkBadgeColors() {
+  const badgeCalls = [];
+  const background = loadBackgroundExports({
+    setBadgeText: (value) => badgeCalls.push({ type: "text", ...value }),
+    setBadgeBackgroundColor: (value) => badgeCalls.push({ type: "color", ...value }),
+  });
+
+  const cases = [
+    { remaining: 100, color: "#2563EB" },
+    { remaining: 75, color: "#287C5A" },
+    { remaining: 50, color: "#879532" },
+    { remaining: 30, color: "#B7791F" },
+    { remaining: 10, color: "#D92D20" },
+  ];
+
+  for (const item of cases) {
+    badgeCalls.length = 0;
+    background.updateBadge({ session: { percentage: 100 - item.remaining } });
+    const colorCall = badgeCalls.find((call) => call.type === "color");
+    const textCall = badgeCalls.find((call) => call.type === "text");
+    expectEqual(textCall?.text, String(item.remaining), `Badge must show ${item.remaining}% remaining.`);
+    expectEqual(
+      colorCall?.color,
+      item.color,
+      `Badge color for ${item.remaining}% remaining must match the intended threshold.`
+    );
+  }
+}
+
+function checkPopupBarTones() {
+  const popup = loadPopupExports();
+  const now = Date.now();
+  const hoursFromNow = (hours) => new Date(now + hours * 3600000).toISOString();
+
+  expectEqual(popup.exports.barTone(45, null, "session"), "attention", "Session bars need the new caution tone.");
+  expectEqual(popup.exports.barTone(25, null, "session"), "warning", "Session bars must keep the amber warning tone.");
+  expectEqual(popup.exports.barTone(8, null, "session"), "danger", "Session bars must keep the critical tone.");
+  expectEqual(
+    popup.exports.barTone(20, hoursFromNow(72), "weekly"),
+    "",
+    "Weekly bars with enough quota and a near reset must stay neutral."
+  );
+  expectEqual(
+    popup.exports.barTone(12, hoursFromNow(20), "weekly"),
+    "",
+    "Weekly bars within one day of reset must avoid warning colors when not critically depleted."
+  );
+  expectEqual(
+    popup.exports.barTone(4, hoursFromNow(20), "weekly"),
+    "danger",
+    "Weekly bars may stay critical when quota is almost gone even if reset is soon."
+  );
+  expectEqual(
+    popup.exports.barTone(20, hoursFromNow(120), "weekly"),
+    "warning",
+    "Weekly bars must use normal thresholds when reset is not soon."
+  );
+}
+
+function loadBackgroundExports(actionOverrides = {}) {
   const listener = { addListener() {} };
   const context = {
     chrome: {
@@ -325,8 +357,8 @@ function loadBackgroundExports() {
         },
       },
       action: {
-        setBadgeText() {},
-        setBadgeBackgroundColor() {},
+        setBadgeText: actionOverrides.setBadgeText || (() => {}),
+        setBadgeBackgroundColor: actionOverrides.setBadgeBackgroundColor || (() => {}),
       },
       i18n: {
         getMessage: (key) => key,
@@ -337,8 +369,7 @@ function loadBackgroundExports() {
 
   return loadScriptExports("background.js", context, [
     "normalizeUsageResponse",
-    "detectPlan",
-    "detectOrganizationPlan",
+    "updateBadge",
   ]);
 }
 
@@ -376,7 +407,7 @@ function loadPopupExports() {
       },
       setInterval() {},
     },
-    ["renderUsage", "shouldShowPlan"]
+    ["renderUsage", "barTone"]
   );
 
   return {

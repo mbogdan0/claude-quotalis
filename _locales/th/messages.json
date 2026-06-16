@@ -14,14 +14,8 @@
   "refreshUsage": {
     "message": "รีเฟรชการใช้งาน"
   },
-  "summaryPlanLabel": {
-    "message": "แพ็กเกจ"
-  },
   "summaryUpdatedLabel": {
     "message": "อัปเดตแล้ว"
-  },
-  "unknown": {
-    "message": "ไม่ทราบ"
   },
   "never": {
     "message": "ไม่เคย"
