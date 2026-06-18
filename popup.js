@@ -547,8 +547,12 @@ function formatResetDateTime(value) {
 
   try {
     return new Intl.DateTimeFormat(chrome.i18n.getUILanguage(), {
-      dateStyle: "medium",
-      timeStyle: "short",
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
     }).format(date);
   } catch (_error) {
     return date.toLocaleString();
