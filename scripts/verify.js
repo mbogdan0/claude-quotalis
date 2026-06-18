@@ -249,12 +249,44 @@ function checkPopupSummaryStatus() {
     plan: "Pro",
     planDetected: true,
     session: { percentage: 0, resetsAt: null },
+    weekly: { percentage: 0, resetsAt: new Date(Date.now() + 48 * 3600000).toISOString() },
     lastUpdated: Date.now(),
   });
   expectEqual(
     popup.elements.updatedValue.textContent,
     "now",
-    "Plan fields must not affect the compact Updated status."
+    "Plan fields must not affect the compact weekly Updated status."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("weekly-footer"),
+    "Updated status must render inside the weekly footer."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("Pace"),
+    "Weekly usage must render the compact pace popover label."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("Peak"),
+    "Weekly usage must render the compact peak-hours popover label."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("Approx. windows left"),
+    "Weekly pace popover must use approximate metric wording."
+  );
+  expectEqual(
+    popup.elements.content.innerHTML.includes("weekly-status"),
+    false,
+    "Weekly status card must not render."
+  );
+  expectEqual(
+    popup.elements.content.innerHTML.includes("You are on pace for the reset"),
+    false,
+    "Weekly status headline must not render."
+  );
+  expectEqual(
+    popup.elements.content.innerHTML.includes("GMT+4"),
+    false,
+    "User-visible popup HTML must not mention the policy timezone."
   );
   expectEqual(
     popup.elements.content.innerHTML.includes("planValue"),
@@ -267,7 +299,6 @@ function checkPopupSummaryStatus() {
     hint: "Try again later.",
     lastUpdated: Date.now(),
   });
-  expectTruthy(popup.elements.updatedValue.textContent, "Error states must still render the Updated field.");
   expectTruthy(
     popup.elements.content.innerHTML.includes("Usage unavailable"),
     "Error states must still render the error message."
@@ -312,24 +343,91 @@ function checkPopupBarTones() {
   expectEqual(popup.exports.barTone(25, null, "session"), "warning", "Session bars must keep the amber warning tone.");
   expectEqual(popup.exports.barTone(8, null, "session"), "danger", "Session bars must keep the critical tone.");
   expectEqual(
-    popup.exports.barTone(20, hoursFromNow(72), "weekly"),
+    popup.exports.barTone(20, hoursFromNow(24), "weeklyCapacity"),
     "",
-    "Weekly bars with enough quota and a near reset must stay neutral."
+    "Main weekly bars with enough five-hour-window capacity must stay neutral."
   );
   expectEqual(
-    popup.exports.barTone(12, hoursFromNow(20), "weekly"),
-    "",
-    "Weekly bars within one day of reset must avoid warning colors when not critically depleted."
-  );
-  expectEqual(
-    popup.exports.barTone(4, hoursFromNow(20), "weekly"),
-    "danger",
-    "Weekly bars may stay critical when quota is almost gone even if reset is soon."
-  );
-  expectEqual(
-    popup.exports.barTone(20, hoursFromNow(120), "weekly"),
+    popup.exports.barTone(20, hoursFromNow(72), "weeklyCapacity"),
     "warning",
-    "Weekly bars must use normal thresholds when reset is not soon."
+    "Main weekly bars without enough five-hour-window capacity must fall back to percentage warning."
+  );
+  expectEqual(
+    popup.exports.barTone(8, hoursFromNow(72), "weeklyCapacity"),
+    "danger",
+    "Main weekly bars without enough capacity must keep percentage danger."
+  );
+  expectEqual(
+    popup.exports.barTone(20, null, "weeklyCapacity"),
+    "warning",
+    "Main weekly bars with missing reset time must fall back to percentage thresholds."
+  );
+  expectEqual(
+    popup.exports.barTone(20, hoursFromNow(24), "weeklyLegacy"),
+    "warning",
+    "Opus weekly bars must keep percentage-based thresholds."
+  );
+  expectTruthy(
+    popup.exports.weeklyCapacityTooltip({ percentage: 80, resetsAt: hoursFromNow(24) }).includes("Weekly buffer"),
+    "Weekly capacity tooltip must explain when there is buffer."
+  );
+  expectTruthy(
+    popup.exports.weeklyCapacityTooltip({ percentage: 80, resetsAt: hoursFromNow(72) }).includes("Weekly pressure"),
+    "Weekly capacity tooltip must explain when capacity is tight."
+  );
+  expectEqual(
+    popup.exports.weeklyCapacityStatus({ percentage: 80, resetsAt: hoursFromNow(24) }).state,
+    "on-track",
+    "Weekly status must be on track when remaining windows/day beats the safe pace."
+  );
+  expectEqual(
+    popup.exports.weeklyCapacityStatus({ percentage: 80, resetsAt: hoursFromNow(72) }).state,
+    "tight",
+    "Weekly status must be tight when remaining windows/day is below the safe pace."
+  );
+  expectEqual(
+    popup.exports.weeklyCapacityStatus({ percentage: 94, resetsAt: hoursFromNow(72) }).state,
+    "critical",
+    "Weekly status must be critical when very low quota is also below pace."
+  );
+  expectEqual(
+    popup.exports.weeklyCapacityStatus({ percentage: 80, resetsAt: null }).state,
+    "tight",
+    "Weekly status with missing reset must fall back to remaining percent thresholds."
+  );
+  expectEqual(
+    popup.exports.isAnthropicPeakWindow(new Date("2026-06-18T13:30:00.000Z")),
+    true,
+    "Thursday 17:30 GMT+4 must be inside the peak quota window."
+  );
+  expectEqual(
+    popup.exports.isAnthropicPeakWindow(new Date("2026-06-18T12:59:00.000Z")),
+    false,
+    "Thursday 16:59 GMT+4 must be outside the peak quota window."
+  );
+  expectEqual(
+    popup.exports.isAnthropicPeakWindow(new Date("2026-06-18T19:00:00.000Z")),
+    false,
+    "Thursday 23:00 GMT+4 must be outside the peak quota window."
+  );
+  expectEqual(
+    popup.exports.isAnthropicPeakWindow(new Date("2026-06-20T14:00:00.000Z")),
+    false,
+    "Saturday 18:00 GMT+4 must be outside the weekday peak quota window."
+  );
+  expectEqual(
+    popup.exports.policyWindowStatus(new Date("2026-06-18T13:30:00.000Z")).active,
+    true,
+    "Policy window status must use the same GMT+4 active-window detection."
+  );
+  expectTruthy(
+    popup.exports.formatPeakWindowForUser(new Date("2026-06-18T13:30:00.000Z")).localRange.includes("-"),
+    "Peak window formatter must return a local time range."
+  );
+  expectEqual(
+    popup.exports.policyWindowStatus(new Date("2026-06-18T13:30:00.000Z")).localWindow.localRange.includes("GMT+4"),
+    false,
+    "Peak window formatter must not expose the policy timezone."
   );
 }
 
@@ -407,7 +505,15 @@ function loadPopupExports() {
       },
       setInterval() {},
     },
-    ["renderUsage", "barTone"]
+    [
+      "renderUsage",
+      "barTone",
+      "weeklyCapacityTooltip",
+      "weeklyCapacityStatus",
+      "isAnthropicPeakWindow",
+      "policyWindowStatus",
+      "formatPeakWindowForUser",
+    ]
   );
 
   return {
