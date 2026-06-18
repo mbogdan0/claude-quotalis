@@ -129,6 +129,11 @@ function usageRow(label, windowData, toneMode) {
   const remaining = 100 - used;
   const reset = windowData?.resetsAt || "";
   const tone = barTone(remaining, reset, toneMode);
+  const hasReset = Number.isFinite(new Date(reset).getTime());
+  const resetLabel = hasReset ? formatReset(reset) : message("noResetTime");
+  const resetMeta = hasReset
+    ? `<span class="reset-time" data-reset="${escapeHtml(reset)}" data-reset-tooltip="${escapeHtml(formatResetDateTime(reset))}" tabindex="0">${escapeHtml(resetLabel)}</span>`
+    : `<span>${escapeHtml(resetLabel)}</span>`;
 
   // "Remaining" is the primary number everywhere; the bar depletes as you consume.
   return `
@@ -142,7 +147,7 @@ function usageRow(label, windowData, toneMode) {
       </div>
       <div class="usage-meta">
         <span>${escapeHtml(message("usagePercent", [used]))}</span>
-        <span data-reset="${escapeHtml(reset)}">${reset ? formatReset(reset) : message("noResetTime")}</span>
+        ${resetMeta}
       </div>
     </article>
   `;
@@ -151,7 +156,9 @@ function usageRow(label, windowData, toneMode) {
 function updateCountdowns() {
   document.querySelectorAll("[data-reset]").forEach((element) => {
     const reset = element.dataset.reset;
-    if (reset) element.textContent = formatReset(reset);
+    if (!reset) return;
+    element.textContent = formatReset(reset);
+    element.dataset.resetTooltip = formatResetDateTime(reset);
   });
 }
 
@@ -532,6 +539,20 @@ function formatReset(value) {
   if (days > 0) return message("resetInDaysHours", [days, hours]);
   if (hours > 0) return message("resetInHoursMinutes", [hours, minutes]);
   return message("resetInMinutes", [minutes]);
+}
+
+function formatResetDateTime(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return message("noResetTime");
+
+  try {
+    return new Intl.DateTimeFormat(chrome.i18n.getUILanguage(), {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
+  } catch (_error) {
+    return date.toLocaleString();
+  }
 }
 
 function clampPercentage(value) {

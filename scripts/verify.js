@@ -92,6 +92,7 @@ checkUrls();
 checkZipContents();
 checkUsageNormalization();
 checkPopupSummaryStatus();
+checkPopupCss();
 checkBadgeColors();
 checkPopupBarTones();
 
@@ -273,6 +274,31 @@ function checkPopupSummaryStatus() {
     popup.elements.content.innerHTML.includes("Approx. windows left"),
     "Weekly pace popover must use approximate metric wording."
   );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes('class="reset-time"'),
+    "Reset labels with timestamps must use the reset tooltip class."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("data-reset-tooltip="),
+    "Reset labels with timestamps must include localized tooltip text."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes('tabindex="0"'),
+    "Reset tooltip labels must be keyboard-focusable."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("<span>noResetTime</span>"),
+    "Missing reset times must render as plain text without tooltip attributes."
+  );
+  expectEqual(
+    popup.exports.formatResetDateTime("not-a-date"),
+    "noResetTime",
+    "Invalid reset tooltip timestamps must use the no-reset fallback."
+  );
+  expectTruthy(
+    popup.exports.formatResetDateTime("2026-06-18T13:30:00.000Z").includes("2026"),
+    "Reset tooltip timestamps must format as a friendly localized date/time."
+  );
   expectEqual(
     popup.elements.content.innerHTML.includes("weekly-status"),
     false,
@@ -302,6 +328,22 @@ function checkPopupSummaryStatus() {
   expectTruthy(
     popup.elements.content.innerHTML.includes("Usage unavailable"),
     "Error states must still render the error message."
+  );
+}
+
+function checkPopupCss() {
+  const css = read("popup.css");
+  expectTruthy(
+    css.includes("bottom: calc(100% + 6px);"),
+    "Weekly and reset popovers must be positioned above their anchors."
+  );
+  expectTruthy(
+    css.includes(".reset-time[data-reset-tooltip]:hover::after"),
+    "Reset tooltip CSS must expose the tooltip on hover."
+  );
+  expectTruthy(
+    css.includes(".reset-time[data-reset-tooltip]:focus-visible::after"),
+    "Reset tooltip CSS must expose the tooltip on keyboard focus."
   );
 }
 
@@ -513,6 +555,7 @@ function loadPopupExports() {
       "isAnthropicPeakWindow",
       "policyWindowStatus",
       "formatPeakWindowForUser",
+      "formatResetDateTime",
     ]
   );
 

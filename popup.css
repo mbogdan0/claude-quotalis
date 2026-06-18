@@ -308,6 +308,43 @@ h1 {
   text-align: right;
 }
 
+.reset-time {
+  position: relative;
+  cursor: help;
+  outline: 0;
+}
+
+.reset-time[data-reset-tooltip]::after {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: max-content;
+  max-width: 210px;
+  padding: 5px 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: 0 8px 20px rgba(31, 35, 32, 0.14);
+  color: var(--text);
+  content: attr(data-reset-tooltip);
+  font-size: 12.1px;
+  font-weight: 650;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  text-align: right;
+  transform: translateY(2px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+
+.reset-time[data-reset-tooltip]:hover::after,
+.reset-time[data-reset-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .weekly-footer {
   flex-wrap: wrap;
   justify-content: space-between;
@@ -400,7 +437,7 @@ h1 {
 .weekly-popover {
   position: absolute;
   z-index: 2;
-  top: calc(100% + 6px);
+  bottom: calc(100% + 6px);
   right: 0;
   width: 296px;
   padding: 10px;
