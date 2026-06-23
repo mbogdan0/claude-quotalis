@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Échec de l'actualisation — affichage des dernières données connues."
+  },
+  "optimizeUsage": {
+    "message": "Optimiser l'usage"
+  },
+  "dayToday": {
+    "message": "Aujourd'hui"
+  },
+  "dayWeekend": {
+    "message": "Week-end · 0 fenêtre"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × fenêtres de 5 h",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "Fenêtre de quota sur 7 jours"
   }
 }

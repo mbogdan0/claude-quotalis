@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Не вдалося оновити — показано останні відомі дані."
+  },
+  "optimizeUsage": {
+    "message": "Оптимізувати використання"
+  },
+  "dayToday": {
+    "message": "Сьогодні"
+  },
+  "dayWeekend": {
+    "message": "Вихідні · 0 вікон"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × 5-год вікон",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "Вікно квоти на 7 днів"
   }
 }

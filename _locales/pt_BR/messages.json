@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Não foi possível atualizar — mostrando os últimos dados conhecidos."
+  },
+  "optimizeUsage": {
+    "message": "Otimizar uso"
+  },
+  "dayToday": {
+    "message": "Hoje"
+  },
+  "dayWeekend": {
+    "message": "Fim de semana · 0 janelas"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × janelas de 5 h",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "Janela de cota de 7 dias"
   }
 }

@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Impossibile aggiornare — vengono mostrati gli ultimi dati disponibili."
+  },
+  "optimizeUsage": {
+    "message": "Ottimizza l'uso"
+  },
+  "dayToday": {
+    "message": "Oggi"
+  },
+  "dayWeekend": {
+    "message": "Weekend · 0 finestre"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × finestre da 5 h",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "Finestra di quota di 7 giorni"
   }
 }

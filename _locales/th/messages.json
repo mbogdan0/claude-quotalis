@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "รีเฟรชไม่สำเร็จ — กำลังแสดงข้อมูลล่าสุดที่ทราบ"
+  },
+  "optimizeUsage": {
+    "message": "ปรับการใช้งานให้เหมาะสม"
+  },
+  "dayToday": {
+    "message": "วันนี้"
+  },
+  "dayWeekend": {
+    "message": "สุดสัปดาห์ · 0 ช่วง"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × ช่วง 5 ชม.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "หน้าต่างโควตา 7 วัน"
   }
 }

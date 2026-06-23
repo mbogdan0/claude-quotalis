@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Tidak dapat menyegarkan — menampilkan data terakhir yang diketahui."
+  },
+  "optimizeUsage": {
+    "message": "Optimalkan penggunaan"
+  },
+  "dayToday": {
+    "message": "Hari ini"
+  },
+  "dayWeekend": {
+    "message": "Akhir pekan · 0 jendela"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × jendela 5 jam",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "Jendela kuota 7 hari"
   }
 }

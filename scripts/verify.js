@@ -17,6 +17,11 @@ const requiredMessageKeys = [
   "footerGithubAria",
   "github",
   "openClaude",
+  "optimizeUsage",
+  "weekWindowLabel",
+  "dayToday",
+  "dayWeekend",
+  "dayWindows",
   "sessionUsage",
   "weeklyUsage",
   "opusWeeklyUsage",
@@ -95,6 +100,7 @@ checkPopupSummaryStatus();
 checkPopupCss();
 checkBadgeColors();
 checkPopupBarTones();
+checkPopupWeekWindow();
 
 if (errors.length) {
   console.error("Verification failed:");
@@ -180,6 +186,7 @@ function checkUrls() {
       const allowed =
         url === "https://claude.ai" ||
         url === "https://claude.ai/*" ||
+        url === "https://claude.ai/code/routines" ||
         url === "https://claude.ai/api/..." ||
         url.startsWith("https://claude.ai/api/") ||
         url === "https://github.com/mbogdan0/claude-quotalis";
@@ -263,16 +270,22 @@ function checkPopupSummaryStatus() {
     "Updated status must render inside the weekly footer."
   );
   expectTruthy(
+    popup.elements.content.innerHTML.includes("week-window"),
+    "Weekly usage must render the 7-day window strip."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("day-cell"),
+    "Weekly usage must render the per-day window cells."
+  );
+  expectEqual(
     popup.elements.content.innerHTML.includes("Pace"),
-    "Weekly usage must render the compact pace popover label."
+    false,
+    "The legacy Pace popover label must not render."
   );
-  expectTruthy(
+  expectEqual(
     popup.elements.content.innerHTML.includes("Peak"),
-    "Weekly usage must render the compact peak-hours popover label."
-  );
-  expectTruthy(
-    popup.elements.content.innerHTML.includes("Approx. windows left"),
-    "Weekly pace popover must use approximate metric wording."
+    false,
+    "The legacy Peak popover label must not render."
   );
   expectTruthy(
     popup.elements.content.innerHTML.includes('class="reset-time"'),
@@ -409,67 +422,62 @@ function checkPopupBarTones() {
     "warning",
     "Opus weekly bars must keep percentage-based thresholds."
   );
-  expectTruthy(
-    popup.exports.weeklyCapacityTooltip({ percentage: 80, resetsAt: hoursFromNow(24) }).includes("Weekly buffer"),
-    "Weekly capacity tooltip must explain when there is buffer."
-  );
-  expectTruthy(
-    popup.exports.weeklyCapacityTooltip({ percentage: 80, resetsAt: hoursFromNow(72) }).includes("Weekly pressure"),
-    "Weekly capacity tooltip must explain when capacity is tight."
-  );
+}
+
+function checkPopupWeekWindow() {
+  const popup = loadPopupExports();
+
+  // Wednesday Jun 24 2026, 10:00 local (before the 18:00 cutoff).
+  const wednesday = new Date(2026, 5, 24, 10, 0, 0);
+  // Reset on Monday Jun 29 2026 -> cells map to Tue23..Mon29.
+  const monReset = new Date(2026, 5, 29, 12, 0, 0).toISOString();
+  const week = popup.exports.weekWindowDays({ percentage: 0, resetsAt: monReset }, wednesday);
+
+  expectEqual(week.length, 7, "The 7-day window must always render seven cells.");
+  expectEqual(week[6].state, "future", "The last cell is the reset day, in the future here.");
+  expectEqual(week[1].state, "today", "Today must be detected inside the window.");
+  expectEqual(week[1].tooltip, "dayToday", "Today shows a plain Today tooltip.");
+  expectEqual(week[1].windows, null, "Today must not expose a per-day window count.");
+  expectEqual(week[0].state, "past", "Days before today are in the past.");
+  expectEqual(week[0].tooltip, null, "Past days have no tooltip.");
+  expectEqual(week[4].weekend, true, "Saturday must be flagged as a weekend cell.");
+  expectEqual(week[4].windows, 0, "Future weekend days always allow zero windows.");
+  expectEqual(week[4].tooltip, "dayWeekend", "Future weekend days use the weekend tooltip.");
+  // Today carries no number; budget spreads over full future weekdays only:
+  // remainingWindows = 9; future weekdays = Thu + Fri + Mon = 3 -> 3/day.
+  expectEqual(week[2].windows, 9 / 3, "Future weekdays split remaining windows over the full days ahead, excluding today.");
+
+  // The result must not depend on the time of day (no 18:00 cutoff anymore).
+  const evening = new Date(2026, 5, 24, 19, 0, 0);
+  const eveningWeek = popup.exports.weekWindowDays({ percentage: 0, resetsAt: monReset }, evening);
+  expectEqual(eveningWeek[1].state, "today", "Today is still detected in the evening.");
+  expectEqual(eveningWeek[1].windows, null, "Today never exposes a per-day window count.");
+  expectEqual(eveningWeek[2].windows, week[2].windows, "Per-day allowance must be time-of-day independent.");
+
+  // A fresh ~7-day window puts the reset day up to 7 days out; today must still
+  // be shown (clamped to the first cell) rather than falling off the strip.
+  const farReset = new Date(2026, 6, 1, 12, 0, 0).toISOString(); // Wed Jul 1 2026, ~7 days out
+  const farWeek = popup.exports.weekWindowDays({ percentage: 0, resetsAt: farReset }, wednesday);
   expectEqual(
-    popup.exports.weeklyCapacityStatus({ percentage: 80, resetsAt: hoursFromNow(24) }).state,
-    "on-track",
-    "Weekly status must be on track when remaining windows/day beats the safe pace."
+    farWeek.filter((cell) => cell.state === "today").length,
+    1,
+    "Today must always be visible, even when the reset is a full ~7 days out."
   );
+  expectEqual(farWeek[0].state, "today", "When the reset is far out, today anchors the first cell.");
+  // The divisor must use the true horizon (Thu, Fri, Mon, Tue + the off-strip
+  // reset day Wed = 5 weekdays), not just the four visible future weekday cells.
   expectEqual(
-    popup.exports.weeklyCapacityStatus({ percentage: 80, resetsAt: hoursFromNow(72) }).state,
-    "tight",
-    "Weekly status must be tight when remaining windows/day is below the safe pace."
+    farWeek[1].windows,
+    9 / 5,
+    "Per-day allowance must divide by every weekday until the actual reset, including the clamped-off reset day."
   );
+
+  const noReset = popup.exports.weekWindowDays({ percentage: 50, resetsAt: null });
+  expectEqual(noReset.length, 7, "Missing reset still renders a seven-cell strip.");
   expectEqual(
-    popup.exports.weeklyCapacityStatus({ percentage: 94, resetsAt: hoursFromNow(72) }).state,
-    "critical",
-    "Weekly status must be critical when very low quota is also below pace."
-  );
-  expectEqual(
-    popup.exports.weeklyCapacityStatus({ percentage: 80, resetsAt: null }).state,
-    "tight",
-    "Weekly status with missing reset must fall back to remaining percent thresholds."
-  );
-  expectEqual(
-    popup.exports.isAnthropicPeakWindow(new Date("2026-06-18T13:30:00.000Z")),
+    noReset.every((cell) => cell.tooltip === null),
     true,
-    "Thursday 17:30 GMT+4 must be inside the peak quota window."
-  );
-  expectEqual(
-    popup.exports.isAnthropicPeakWindow(new Date("2026-06-18T12:59:00.000Z")),
-    false,
-    "Thursday 16:59 GMT+4 must be outside the peak quota window."
-  );
-  expectEqual(
-    popup.exports.isAnthropicPeakWindow(new Date("2026-06-18T19:00:00.000Z")),
-    false,
-    "Thursday 23:00 GMT+4 must be outside the peak quota window."
-  );
-  expectEqual(
-    popup.exports.isAnthropicPeakWindow(new Date("2026-06-20T14:00:00.000Z")),
-    false,
-    "Saturday 18:00 GMT+4 must be outside the weekday peak quota window."
-  );
-  expectEqual(
-    popup.exports.policyWindowStatus(new Date("2026-06-18T13:30:00.000Z")).active,
-    true,
-    "Policy window status must use the same GMT+4 active-window detection."
-  );
-  expectTruthy(
-    popup.exports.formatPeakWindowForUser(new Date("2026-06-18T13:30:00.000Z")).localRange.includes("-"),
-    "Peak window formatter must return a local time range."
-  );
-  expectEqual(
-    popup.exports.policyWindowStatus(new Date("2026-06-18T13:30:00.000Z")).localWindow.localRange.includes("GMT+4"),
-    false,
-    "Peak window formatter must not expose the policy timezone."
+    "Without a reset time, cells carry no tooltips."
   );
 }
 
@@ -550,11 +558,7 @@ function loadPopupExports() {
     [
       "renderUsage",
       "barTone",
-      "weeklyCapacityTooltip",
-      "weeklyCapacityStatus",
-      "isAnthropicPeakWindow",
-      "policyWindowStatus",
-      "formatPeakWindowForUser",
+      "weekWindowDays",
       "formatResetDateTime",
     ]
   );

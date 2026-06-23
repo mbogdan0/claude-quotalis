@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Aktualisierung fehlgeschlagen – letzte bekannte Daten werden angezeigt."
+  },
+  "optimizeUsage": {
+    "message": "Nutzung optimieren"
+  },
+  "dayToday": {
+    "message": "Heute"
+  },
+  "dayWeekend": {
+    "message": "Wochenende · 0 Fenster"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × 5-Std-Fenster",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "7-Tage-Kontingentfenster"
   }
 }

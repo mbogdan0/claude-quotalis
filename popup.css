@@ -393,84 +393,78 @@ h1 {
   margin-left: auto;
 }
 
-.weekly-control {
-  position: relative;
-}
-
-.weekly-popover-label {
+.week-window {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 22px;
-  padding: 0 2px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: help;
-  font-size: 12.1px;
-  font-weight: 720;
-  transition: color 160ms ease;
 }
 
-.weekly-popover-label:hover,
-.weekly-popover-label:focus-visible,
-.weekly-popover-label[aria-expanded="true"] {
-  color: var(--accent-ink);
+.day-cell {
+  position: relative;
+  width: 11px;
+  height: 11px;
+  border: 1px solid transparent;
+  border-radius: 3px;
   outline: 0;
 }
 
-.weekly-popover-label svg {
-  width: 13px;
-  height: 13px;
-  flex: 0 0 auto;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
+.day-cell[data-day-tooltip] {
+  cursor: help;
 }
 
-.weekly-peak-label.is-active {
-  color: var(--warning);
+/* Past: elapsed/unknown — a faded neutral square that recedes. */
+.day-cell--past {
+  background: var(--line-strong);
+  opacity: 0.55;
 }
 
-.weekly-popover {
+/* Today: the live day — solid brand green with a soft halo to stand out. */
+.day-cell--today {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Future: available budget — a green-tinted, outlined "open slot". */
+.day-cell--future {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* Weekend: excluded from the budget — empty dashed outline reads as zero. */
+.day-cell--weekend {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+}
+
+.day-cell[data-day-tooltip]::after {
   position: absolute;
-  z-index: 2;
-  bottom: calc(100% + 6px);
+  z-index: 3;
   right: 0;
-  width: 296px;
-  padding: 10px;
+  bottom: calc(100% + 6px);
+  width: max-content;
+  max-width: 220px;
+  padding: 5px 7px;
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--panel);
-  box-shadow: 0 10px 26px rgba(31, 35, 32, 0.14);
+  box-shadow: 0 8px 20px rgba(31, 35, 32, 0.14);
   color: var(--text);
+  content: attr(data-day-tooltip);
+  font-size: 12.1px;
+  font-weight: 650;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  text-align: right;
+  transform: translateY(2px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: nowrap;
 }
 
-.weekly-control:first-child .weekly-popover {
-  right: -104px;
-}
-
-.weekly-popover[hidden] {
-  display: none;
-}
-
-.weekly-popover p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 13.2px;
-  line-height: 1.4;
-}
-
-.weekly-popover p:first-child {
-  margin-top: 0;
-}
-
-.weekly-popover strong {
-  color: var(--text);
-  font-size: 14.3px;
-  font-weight: 800;
+.day-cell[data-day-tooltip]:hover::after,
+.day-cell[data-day-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .empty,
@@ -510,13 +504,19 @@ h1 {
   color: var(--muted);
 }
 
+.footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .footer-link {
   display: inline-flex;
   align-items: center;
-  min-height: 26px;
+  min-height: 22px;
   border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 12.1px;
+  font-size: 11px;
   font-weight: 600;
   text-decoration: none;
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
@@ -533,13 +533,23 @@ h1 {
 }
 
 .footer-link-source {
-  gap: 5px;
   padding: 0 5px;
   color: var(--muted);
 }
 
 .footer-link-source:hover,
 .footer-link-source:focus-visible {
+  background: var(--panel-soft);
+  color: var(--accent-ink);
+}
+
+.footer-link-secondary {
+  padding: 0 5px;
+  color: var(--muted);
+}
+
+.footer-link-secondary:hover,
+.footer-link-secondary:focus-visible {
   background: var(--panel-soft);
   color: var(--accent-ink);
 }
@@ -554,13 +564,6 @@ h1 {
 .footer-link-primary:focus-visible {
   background: var(--accent-soft);
   color: var(--accent);
-}
-
-.footer-icon {
-  width: 13px;
-  height: 13px;
-  flex: 0 0 auto;
-  fill: currentColor;
 }
 
 .footer-arrow {

@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Không thể làm mới — đang hiển thị dữ liệu gần nhất."
+  },
+  "optimizeUsage": {
+    "message": "Tối ưu mức dùng"
+  },
+  "dayToday": {
+    "message": "Hôm nay"
+  },
+  "dayWeekend": {
+    "message": "Cuối tuần · 0 cửa sổ"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × cửa sổ 5 giờ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "Cửa sổ hạn mức 7 ngày"
   }
 }

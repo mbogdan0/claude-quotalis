@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "No se pudo actualizar: se muestran los últimos datos conocidos."
+  },
+  "optimizeUsage": {
+    "message": "Optimizar uso"
+  },
+  "dayToday": {
+    "message": "Hoy"
+  },
+  "dayWeekend": {
+    "message": "Fin de semana · 0 ventanas"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × ventanas de 5 h",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "Ventana de cuota de 7 días"
   }
 }

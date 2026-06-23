@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "刷新失败 — 正在显示最近一次的数据。"
+  },
+  "optimizeUsage": {
+    "message": "优化用量"
+  },
+  "dayToday": {
+    "message": "今天"
+  },
+  "dayWeekend": {
+    "message": "周末 · 0 个窗口"
+  },
+  "dayWindows": {
+    "message": "约 $COUNT$ × 5 小时窗口",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "7 天配额窗口"
   }
 }

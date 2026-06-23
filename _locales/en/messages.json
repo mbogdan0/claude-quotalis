@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "Couldn't refresh — showing last known data."
+  },
+  "optimizeUsage": {
+    "message": "Optimize usage"
+  },
+  "dayToday": {
+    "message": "Today"
+  },
+  "dayWeekend": {
+    "message": "Weekend · 0 windows"
+  },
+  "dayWindows": {
+    "message": "~$COUNT$ × 5h windows",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "7-day quota window"
   }
 }

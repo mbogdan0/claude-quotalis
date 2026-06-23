@@ -140,5 +140,25 @@
   },
   "refreshFailed": {
     "message": "更新できませんでした — 最後に取得したデータを表示しています。"
+  },
+  "optimizeUsage": {
+    "message": "使用量を最適化"
+  },
+  "dayToday": {
+    "message": "今日"
+  },
+  "dayWeekend": {
+    "message": "週末 · 0 ウィンドウ"
+  },
+  "dayWindows": {
+    "message": "約 $COUNT$ × 5 時間枠",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekWindowLabel": {
+    "message": "7 日間のクォータ枠"
   }
 }

@@ -3,11 +3,9 @@ const refreshButton = document.getElementById("refreshButton");
 const WEEKLY_FIVE_HOUR_WINDOWS = 9;
 const DAILY_FIVE_HOUR_WINDOW_PACE = WEEKLY_FIVE_HOUR_WINDOWS / 7;
 const DAY_MS = 86400000;
-const ANTHROPIC_PEAK_OFFSET_HOURS = 4;
-const ANTHROPIC_PEAK_START_HOUR = 17;
-const ANTHROPIC_PEAK_END_HOUR = 23;
-const WEEKLY_CRITICAL_REMAINING = 10;
+const WINDOW_DAYS = 7;
 let currentUsageData = null;
+let lastWeekWindowHtml = "";
 
 document.addEventListener("DOMContentLoaded", initializePopup);
 
@@ -103,7 +101,6 @@ function renderUsage(usageData) {
   content.innerHTML = rows.join("");
   updateUpdatedValue(usageData);
   updateWeeklyFooterState(usageData.weekly);
-  bindWeeklyPopovers();
 }
 
 function applyStaleState(usageData) {
@@ -173,8 +170,6 @@ function barTone(remaining, reset, toneMode = "session") {
 }
 
 function weeklyFooter(usageData) {
-  const peak = policyWindowStatus();
-
   return `
     <div class="weekly-footer" aria-live="polite">
       <div class="weekly-updated">
@@ -182,23 +177,8 @@ function weeklyFooter(usageData) {
         <span class="summary-separator" aria-hidden="true">·</span>
         <strong id="updatedValue">${escapeHtml(formatUpdatedRelative(usageData.lastUpdated))}</strong>
       </div>
-      <div class="weekly-actions">
-        ${popoverControl({
-          buttonId: "weeklyPaceButton",
-          panelId: "weeklyPacePopover",
-          className: "weekly-popover-label",
-          label: "Pace",
-          icon: infoIcon(),
-          content: weeklyPacePopover(usageData.weekly),
-        })}
-        ${popoverControl({
-          buttonId: "weeklyPeakButton",
-          panelId: "weeklyPeakPopover",
-          className: `weekly-popover-label weekly-peak-label${peak.active ? " is-active" : ""}`,
-          label: "Peak",
-          icon: peakIcon(),
-          content: peakHoursPopover(peak),
-        })}
+      <div class="weekly-actions" id="weeklyWindow">
+        ${weekWindow(usageData.weekly)}
       </div>
     </div>
   `;
@@ -213,18 +193,16 @@ function updateUpdatedValue(usageData) {
 }
 
 function updateWeeklyFooterState(weeklyData) {
-  const pacePanel = document.getElementById("weeklyPacePopover");
-  if (pacePanel) {
-    pacePanel.innerHTML = weeklyPacePopover(weeklyData);
-  }
+  const host = document.getElementById("weeklyWindow");
+  if (!host) return;
 
-  const peakButton = document.getElementById("weeklyPeakButton");
-  const peakPanel = document.getElementById("weeklyPeakPopover");
-  if (peakButton || peakPanel) {
-    const peak = policyWindowStatus();
-    if (peakButton) peakButton.classList.toggle("is-active", peak.active);
-    if (peakPanel) peakPanel.innerHTML = peakHoursPopover(peak);
-  }
+  // Only repaint when the strip actually changes (a day or reset boundary
+  // crossed). Repainting every tick would wipe the cell under the cursor and
+  // make the hover tooltip flicker.
+  const next = weekWindow(weeklyData);
+  if (next === lastWeekWindowHtml && host.innerHTML) return;
+  lastWeekWindowHtml = next;
+  host.innerHTML = next;
 }
 
 function hasWeeklyCapacityBuffer(remaining, reset) {
@@ -248,243 +226,110 @@ function weeklyCapacity(remaining, reset) {
   };
 }
 
-function weeklyCapacityStatus(weeklyData) {
-  if (!weeklyData) {
-    return {
-      state: "unknown",
-      insight: "unknown",
-      windowsLeft: "--",
-      availablePerDay: "--",
-      safePace: `${formatDecimal(DAILY_FIVE_HOUR_WINDOW_PACE, 2)}/day`,
-      resetLabel: message("noResetTime"),
-    };
+function weekWindowDays(weeklyData, now = new Date()) {
+  const resetDate = weeklyData?.resetsAt ? new Date(weeklyData.resetsAt) : null;
+  const hasReset = resetDate && Number.isFinite(resetDate.getTime());
+
+  if (!hasReset) {
+    // No reset timestamp: render a neutral, tooltip-less strip.
+    return Array.from({ length: WINDOW_DAYS }, () => ({
+      state: "past",
+      weekend: false,
+      windows: null,
+      tooltip: null,
+    }));
   }
 
-  const remaining = 100 - clampPercentage(weeklyData.percentage || 0);
-  const capacity = weeklyCapacity(remaining, weeklyData.resetsAt);
-  const resetLabel = weeklyData.resetsAt ? formatReset(weeklyData.resetsAt) : message("noResetTime");
-  const remainingWindows = remaining / 100 * WEEKLY_FIVE_HOUR_WINDOWS;
-
-  if (!capacity) {
-    const fallbackState = quotaTone(remaining) === "danger" ? "critical" : quotaTone(remaining) ? "tight" : "on-track";
-    return {
-      state: fallbackState,
-      insight: fallbackState === "on-track" ? "on pace" : fallbackState,
-      windowsLeft: formatDecimal(remainingWindows, 1),
-      availablePerDay: "--",
-      safePace: `${formatDecimal(DAILY_FIVE_HOUR_WINDOW_PACE, 2)}/day`,
-      resetLabel,
-    };
-  }
-
-  const onTrack = capacity.windowsPerDay >= capacity.neededPerDay;
-  const critical = remaining <= WEEKLY_CRITICAL_REMAINING && !onTrack;
-  const state = critical ? "critical" : onTrack ? "on-track" : "tight";
-
-  return {
-    state,
-    insight: state === "on-track" ? "on pace" : state,
-    windowsLeft: formatDecimal(capacity.remainingWindows, 1),
-    availablePerDay: `${formatDecimal(capacity.windowsPerDay, 2)}/day`,
-    safePace: `${formatDecimal(capacity.neededPerDay, 2)}`,
-    resetLabel,
-  };
-}
-
-function weeklyCapacityTooltip(weeklyData) {
-  if (!weeklyData) return "Weekly capacity: no weekly quota data yet.";
-
-  const remaining = 100 - clampPercentage(weeklyData.percentage || 0);
-  const capacity = weeklyCapacity(remaining, weeklyData.resetsAt);
-  if (!capacity) return "Weekly capacity: reset time is unavailable, so status uses remaining percent.";
-
-  const label = capacity.windowsPerDay >= capacity.neededPerDay ? "Weekly buffer" : "Weekly pressure";
-  return `${label}: approx. ${formatDecimal(capacity.remainingWindows, 1)} five-hour windows left, approx. ${formatDecimal(capacity.windowsPerDay, 2)}/day until reset. Approx. safe pace: ${formatDecimal(capacity.neededPerDay, 2)}/day.`;
-}
-
-function policyWindowStatus(now = new Date()) {
-  const peakNow = isAnthropicPeakWindow(now);
-  const localWindow = formatPeakWindowForUser(now);
-
-  return {
-    active: peakNow,
-    localWindow,
-    message: peakNow
-      ? `Active now. Claude quota may be draining faster until ${localWindow.localEnd}.`
-      : "Claude quota may drain faster during this window.",
-  };
-}
-
-function isAnthropicPeakWindow(now = new Date()) {
-  const shifted = new Date(now.getTime() + ANTHROPIC_PEAK_OFFSET_HOURS * 3600000);
-  const day = shifted.getUTCDay();
-  const hour = shifted.getUTCHours();
-
-  return day >= 1 && day <= 5 && hour >= ANTHROPIC_PEAK_START_HOUR && hour < ANTHROPIC_PEAK_END_HOUR;
-}
-
-function formatPeakWindowForUser(now = new Date()) {
-  const gmt4Now = new Date(now.getTime() + ANTHROPIC_PEAK_OFFSET_HOURS * 3600000);
-  const startUtc = Date.UTC(
-    gmt4Now.getUTCFullYear(),
-    gmt4Now.getUTCMonth(),
-    gmt4Now.getUTCDate(),
-    ANTHROPIC_PEAK_START_HOUR - ANTHROPIC_PEAK_OFFSET_HOURS,
-    0,
-    0
+  const today = startOfDay(now);
+  const todayTime = today.getTime();
+  // Anchor the strip on the reset day (last cell), but guarantee "today" is
+  // always visible. A fresh ~7-day window can put the reset day up to 7 days
+  // out, which would push today off the left edge — clamp the last cell to at
+  // most today+6 (and never before today) so "you are here" always shows.
+  const latestLast = addDays(today, WINDOW_DAYS - 1);
+  let lastDay = startOfDay(resetDate);
+  if (lastDay.getTime() > latestLast.getTime()) lastDay = latestLast;
+  if (lastDay.getTime() < todayTime) lastDay = today;
+  const dates = Array.from({ length: WINDOW_DAYS }, (_unused, index) =>
+    addDays(lastDay, index - (WINDOW_DAYS - 1))
   );
-  const endUtc = Date.UTC(
-    gmt4Now.getUTCFullYear(),
-    gmt4Now.getUTCMonth(),
-    gmt4Now.getUTCDate(),
-    ANTHROPIC_PEAK_END_HOUR - ANTHROPIC_PEAK_OFFSET_HOURS,
-    0,
-    0
-  );
-  const start = new Date(startUtc);
-  const end = new Date(endUtc);
 
-  return {
-    localStart: formatLocalTime(start),
-    localEnd: formatLocalTime(end),
-    localRange: `${formatLocalTime(start)}-${formatLocalTime(end)}`,
-  };
-}
+  const states = dates.map((date) => {
+    const time = startOfDay(date).getTime();
+    if (time < todayTime) return "past";
+    if (time === todayTime) return "today";
+    return "future";
+  });
+  const weekends = dates.map((date) => isWeekend(date));
 
-function formatLocalTime(value) {
-  try {
-    return new Intl.DateTimeFormat(chrome.i18n.getUILanguage(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(value);
-  } catch (_error) {
-    return value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  // Today is only a "you are here" marker: its spend so far and what's left of
+  // it are unknowable, so we never put a number on it. The remaining budget is
+  // spread evenly across every full day ahead until the reset — weekdays from
+  // tomorrow through the reset day (weekends spend nothing). This counts the
+  // true horizon, not the visible cells, so a clamped strip still divides by
+  // the real number of days until the quota refreshes.
+  const remaining = 100 - clampPercentage(weeklyData.percentage || 0);
+  const remainingWindows = (remaining / 100) * WEEKLY_FIVE_HOUR_WINDOWS;
+  const resetDayTime = startOfDay(resetDate).getTime();
+  let usableDays = 0;
+  for (let cursor = addDays(today, 1); cursor.getTime() <= resetDayTime; cursor = addDays(cursor, 1)) {
+    if (!isWeekend(cursor)) usableDays += 1;
   }
+  const perDay = usableDays > 0 ? remainingWindows / usableDays : 0;
+
+  return dates.map((_date, index) => {
+    const state = states[index];
+    const weekend = weekends[index];
+    let windows = null;
+    let tooltip = null;
+    if (state === "today") {
+      tooltip = message("dayToday");
+    } else if (state === "future") {
+      windows = weekend ? 0 : perDay;
+      tooltip = weekend
+        ? message("dayWeekend")
+        : message("dayWindows", [formatDecimal(perDay, 1)]);
+    }
+    return { state, weekend, windows, tooltip };
+  });
 }
 
-function weeklyPacePopover(weeklyData) {
-  const status = weeklyCapacityStatus(weeklyData);
-  return `
-    <div class="popover-metrics">
-      ${popoverMetric("Approx. windows left", status.windowsLeft)}
-      ${popoverMetric("Approx. available/day", status.availablePerDay)}
-      ${popoverMetric("Approx. safe pace", status.safePace)}
-      ${popoverMetric("Insight", status.insight)}
-    </div>
-  `;
+function weekWindow(weeklyData) {
+  const cells = weekWindowDays(weeklyData)
+    .map((cell) => {
+      // The weekend "excluded / 0" look only applies to upcoming days; past and
+      // current weekends just use their state styling.
+      const weekendClass = cell.weekend && cell.state === "future" ? " day-cell--weekend" : "";
+      const className = `day-cell day-cell--${cell.state}${weekendClass}`;
+      const tooltip = cell.tooltip
+        ? ` data-day-tooltip="${escapeHtml(cell.tooltip)}" tabindex="0"`
+        : "";
+      return `<span class="${className}"${tooltip}></span>`;
+    })
+    .join("");
+
+  return `<div class="week-window" role="img" aria-label="${escapeHtml(message("weekWindowLabel"))}">${cells}</div>`;
 }
 
-function peakHoursPopover(peak) {
-  const activePrefix = peak.active ? "Active now. " : "";
-  return `
-    <p><strong>Peak window:</strong> weekdays ${escapeHtml(peak.localWindow.localRange)} your time.</p>
-    <p>${escapeHtml(activePrefix)}Claude quota may drain faster during this window.</p>
-  `;
+function startOfDay(value) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
-function popoverMetric(label, value) {
-  return `
-    <p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>
-  `;
+function addDays(value, days) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function isWeekend(value) {
+  const day = new Date(value).getDay();
+  return day === 0 || day === 6;
 }
 
 function formatDecimal(value, digits) {
   return Number(value).toFixed(digits);
-}
-
-function popoverControl({ buttonId, panelId, className, label, icon, content }) {
-  return `
-    <div class="weekly-control">
-      <button class="${escapeHtml(className)}" id="${escapeHtml(buttonId)}" type="button" aria-expanded="false" aria-controls="${escapeHtml(panelId)}">
-        ${icon}
-        <span>${escapeHtml(label)}</span>
-      </button>
-      <div class="weekly-popover" id="${escapeHtml(panelId)}" role="dialog" hidden>
-        ${content}
-      </div>
-    </div>
-  `;
-}
-
-function bindWeeklyPopovers() {
-  document.querySelectorAll(".weekly-control").forEach((control) => {
-    const button = control.querySelector("button");
-    const panel = control.querySelector(".weekly-popover");
-    if (!button || !panel) return;
-
-    button.addEventListener("pointerdown", () => {
-      control.dataset.pointerOpening = "true";
-    });
-
-    button.addEventListener("click", () => {
-      const shouldOpen = button.getAttribute("aria-expanded") !== "true";
-      delete control.dataset.pointerOpening;
-      closeWeeklyPopovers(control);
-      setPopoverOpen(button, panel, shouldOpen);
-    });
-
-    button.addEventListener("focus", () => {
-      if (control.dataset.pointerOpening === "true") return;
-      closeWeeklyPopovers(control);
-      setPopoverOpen(button, panel, true);
-    });
-
-    control.addEventListener("focusout", () => {
-      setTimeout(() => {
-        if (!control.contains(document.activeElement)) setPopoverOpen(button, panel, false);
-      }, 0);
-    });
-
-    control.addEventListener("mouseenter", () => {
-      closeWeeklyPopovers(control);
-      setPopoverOpen(button, panel, true);
-    });
-
-    control.addEventListener("mouseleave", () => {
-      if (!control.contains(document.activeElement)) setPopoverOpen(button, panel, false);
-    });
-  });
-}
-
-function closeWeeklyPopovers(except = null) {
-  document.querySelectorAll(".weekly-control").forEach((control) => {
-    if (control === except) return;
-    const button = control.querySelector("button");
-    const panel = control.querySelector(".weekly-popover");
-    if (button && panel) setPopoverOpen(button, panel, false);
-  });
-}
-
-function setPopoverOpen(button, panel, open) {
-  button.setAttribute("aria-expanded", open ? "true" : "false");
-  panel.hidden = !open;
-}
-
-function infoIcon() {
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="9"></circle>
-      <path d="M12 11v5"></path>
-      <path d="M12 8h.01"></path>
-    </svg>
-  `;
-}
-
-function peakIcon() {
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3v3"></path>
-      <path d="M12 18v3"></path>
-      <path d="m5.6 5.6 2.1 2.1"></path>
-      <path d="m16.3 16.3 2.1 2.1"></path>
-      <path d="M3 12h3"></path>
-      <path d="M18 12h3"></path>
-      <path d="m5.6 18.4 2.1-2.1"></path>
-      <path d="m16.3 7.7 2.1-2.1"></path>
-      <circle cx="12" cy="12" r="3.5"></circle>
-    </svg>
-  `;
 }
 
 function quotaTone(remaining) {
