@@ -37,12 +37,12 @@ Quotalis uses the minimum permissions needed for this job:
 
 - `cookies` to read the active Claude.ai browser session.
 - `alarms` to refresh usage in the background.
-- `storage` to keep normalized usage data locally.
+- `storage` to keep normalized usage data and the rolling quota log locally.
 - `https://claude.ai/*` as the only host permission.
 
-The extension sends Claude cookies only to Claude API endpoints under `https://claude.ai/api/...`. It does not use analytics, remote scripts, third-party APIs, tab access, browsing history, downloads, clipboard access, native messaging, or broad host permissions.
+The extension sends Claude cookies only to Claude API endpoints under `https://claude.ai/api/...`. It does not use analytics, remote scripts, third-party APIs, tab access, browsing history, the Chrome downloads permission/API, clipboard access, native messaging, or broad host permissions.
 
-Stored data is limited to normalized usage percentages, reset timestamps, the active Claude organization id, which Claude endpoint the numbers came from, and a last-updated timestamp. It is not sold, shared, uploaded, or made exciting.
+Stored data is limited to normalized usage percentages, reset timestamps, the active Claude organization id, which Claude endpoint the numbers came from, a last-updated timestamp, and a rolling quota log capped at the latest 3000 entries. CSV log exports are generated locally from extension storage. The data is not sold, shared, uploaded, or made exciting.
 
 ## Install locally
 

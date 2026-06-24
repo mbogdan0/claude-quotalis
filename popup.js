@@ -1,5 +1,6 @@
 const content = document.getElementById("content");
 const refreshButton = document.getElementById("refreshButton");
+const USAGE_LOG_STORAGE_KEY = "usageLog";
 const WEEKLY_WINDOW_STORAGE_KEY = "weeklyFiveHourWindows";
 const INCLUDE_TODAY_STORAGE_KEY = "includeTodayInWeekWindow";
 const DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS = 9;
@@ -8,6 +9,20 @@ const MAX_WEEKLY_FIVE_HOUR_WINDOWS = 500;
 const DAY_MS = 86400000;
 const WINDOW_DAYS = 7;
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const USAGE_LOG_CSV_COLUMNS = [
+  ["captured_at", "capturedAt"],
+  ["last_seen_at", "lastSeenAt"],
+  ["source", "source"],
+  ["session_used_percent", "sessionUsedPercent"],
+  ["session_remaining_percent", "sessionRemainingPercent"],
+  ["session_resets_at", "sessionResetsAt"],
+  ["weekly_used_percent", "weeklyUsedPercent"],
+  ["weekly_remaining_percent", "weeklyRemainingPercent"],
+  ["weekly_resets_at", "weeklyResetsAt"],
+  ["opus_weekly_used_percent", "opusWeeklyUsedPercent"],
+  ["opus_weekly_remaining_percent", "opusWeeklyRemainingPercent"],
+  ["opus_weekly_resets_at", "opusWeeklyResetsAt"],
+];
 let currentUsageData = null;
 let lastWeekWindowHtml = "";
 let includeTodayInWeekWindow = false;
@@ -21,6 +36,7 @@ function initializePopup() {
   localizeDocument();
   refreshButton.addEventListener("click", () => refreshUsage());
   content.addEventListener("click", handleWeekWindowToggle);
+  content.addEventListener("click", handleUsageLogDownload);
   content.addEventListener("keydown", handleWeekWindowToggle);
   content.addEventListener("change", handleWeeklyWindowInputChange);
   loadStoredUsage();
@@ -192,6 +208,13 @@ function weeklyFooter(usageData) {
         <label for="weeklyWindowInput">${escapeHtml(message("weeklyWindowSettingLabel"))}</label>
         <input id="weeklyWindowInput" class="weekly-window-input" type="number" min="${MIN_WEEKLY_FIVE_HOUR_WINDOWS}" max="${MAX_WEEKLY_FIVE_HOUR_WINDOWS}" step="1" value="${weeklyFiveHourWindows}" aria-label="${escapeHtml(message("weeklyWindowSettingInputAria"))}">
         <span class="weekly-window-help" tabindex="0" role="img" aria-label="${escapeHtml(message("weeklyWindowSettingHelp"))}" data-weekly-window-tooltip="${escapeHtml(message("weeklyWindowSettingHelp"))}">?</span>
+        <button class="weekly-log-download" type="button" data-usage-log-download data-log-download-tooltip="Download logs" aria-label="Download logs">
+          <svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12"></path>
+            <path d="m7 10 5 5 5-5"></path>
+            <path d="M5 21h14"></path>
+          </svg>
+        </button>
       </div>
       <div class="weekly-actions" id="weeklyWindow">
         ${weekWindow(usageData.weekly, { includeToday: includeTodayInWeekWindow, weeklyWindows: weeklyFiveHourWindows })}
@@ -224,6 +247,72 @@ function handleWeeklyWindowInputChange(event) {
   chrome.storage.local.set({ [WEEKLY_WINDOW_STORAGE_KEY]: nextValue });
 
   if (currentUsageData) renderUsage(currentUsageData);
+}
+
+function handleUsageLogDownload(event) {
+  const target = event.target?.closest?.("[data-usage-log-download]");
+  if (!target) return;
+  event.preventDefault();
+  downloadUsageLog(target);
+}
+
+function downloadUsageLog(button) {
+  button.disabled = true;
+  chrome.storage.local.get(USAGE_LOG_STORAGE_KEY, (stored) => {
+    try {
+      const csv = usageLogToCsv(stored?.[USAGE_LOG_STORAGE_KEY]);
+      triggerCsvDownload(csv, usageLogFilename(new Date()));
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+function usageLogToCsv(entries) {
+  const rows = Array.isArray(entries) ? entries : [];
+  const header = USAGE_LOG_CSV_COLUMNS.map(([label]) => label).join(",");
+  const body = rows.map((entry) =>
+    USAGE_LOG_CSV_COLUMNS.map(([_label, key]) => csvCell(entry?.[key])).join(",")
+  );
+  return [header, ...body].join("\n") + "\n";
+}
+
+function csvCell(value) {
+  if (value === null || value === undefined) return "";
+
+  const text = String(value);
+  if (!/[",\r\n]/.test(text)) return text;
+  return `"${text.replace(/"/g, "\"\"")}"`;
+}
+
+function triggerCsvDownload(csv, filename) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function usageLogFilename(now = new Date()) {
+  const date = new Date(now);
+  const parts = [
+    date.getFullYear(),
+    padFilenamePart(date.getMonth() + 1),
+    padFilenamePart(date.getDate()),
+    padFilenamePart(date.getHours()),
+    padFilenamePart(date.getMinutes()),
+    padFilenamePart(date.getSeconds()),
+  ];
+  return `quotalis-usage-log-${parts.slice(0, 3).join("-")}-${parts.slice(3).join("-")}.csv`;
+}
+
+function padFilenamePart(value) {
+  return String(value).padStart(2, "0");
 }
 
 function updateUpdatedValue(usageData) {

@@ -1,6 +1,14 @@
 const REFRESH_ALARM = "quotalis-refresh";
 const REFRESH_PERIOD_MINUTES = 1;
 const CLAUDE_ORIGIN = "https://claude.ai";
+const USAGE_LOG_STORAGE_KEY = "usageLog";
+const WEEKLY_WINDOW_STORAGE_KEY = "weeklyFiveHourWindows";
+const USAGE_LOG_SCHEMA_VERSION = 1;
+const USAGE_LOG_LIMIT = 3000;
+const USAGE_LOG_TOUCH_INTERVAL_MS = 30 * 60 * 1000;
+const DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS = 9;
+const MIN_WEEKLY_FIVE_HOUR_WINDOWS = 1;
+const MAX_WEEKLY_FIVE_HOUR_WINDOWS = 500;
 
 chrome.runtime.onInstalled.addListener(() => {
   scheduleAlarms();
@@ -33,9 +41,16 @@ function scheduleAlarms() {
 
 async function refreshUsage() {
   const result = await readClaudeUsage();
-  const { usageData: previous } = await chrome.storage.local.get("usageData");
+  const stored = await chrome.storage.local.get([
+    "usageData",
+    USAGE_LOG_STORAGE_KEY,
+    WEEKLY_WINDOW_STORAGE_KEY,
+  ]);
+  const previous = stored.usageData;
+  const now = Date.now();
 
   let usageData;
+  let shouldLogUsage = false;
   if (result.error && hasUsableData(previous)) {
     // Keep the last known-good numbers; flag the failed refresh instead of blanking.
     usageData = {
@@ -46,10 +61,24 @@ async function refreshUsage() {
     };
   } else {
     usageData = result;
-    usageData.lastUpdated = Date.now();
+    usageData.lastUpdated = now;
+    shouldLogUsage = hasUsableData(usageData);
   }
 
-  await chrome.storage.local.set({ usageData });
+  const nextStorage = { usageData };
+  if (shouldLogUsage) {
+    const nextUsageLog = updateUsageLog(
+      stored[USAGE_LOG_STORAGE_KEY],
+      usageData,
+      stored[WEEKLY_WINDOW_STORAGE_KEY],
+      now
+    );
+    if (nextUsageLog !== stored[USAGE_LOG_STORAGE_KEY]) {
+      nextStorage[USAGE_LOG_STORAGE_KEY] = nextUsageLog;
+    }
+  }
+
+  await chrome.storage.local.set(nextStorage);
   updateBadge(usageData);
   return usageData;
 }
@@ -205,6 +234,185 @@ function normalizeWindow(value) {
     percentage: clampPercentage(Math.round(value?.utilization || 0)),
     resetsAt: value?.resets_at || null,
   };
+}
+
+function updateUsageLog(existingLog, usageData, weeklyFiveHourWindows, timestamp = Date.now()) {
+  const log = compactUsageLog(Array.isArray(existingLog) ? existingLog : []);
+  const entry = createUsageLogEntry(usageData, weeklyFiveHourWindows, timestamp);
+  const lastIndex = log.length - 1;
+  const lastEntry = lastIndex >= 0 ? log[lastIndex] : null;
+
+  if (lastEntry && usageLogFingerprint(lastEntry) === usageLogFingerprint(entry)) {
+    const lastSeenAt = parseLogTimestamp(lastEntry.lastSeenAt || lastEntry.capturedAt);
+    if (!Number.isFinite(lastSeenAt) || timestamp - lastSeenAt >= USAGE_LOG_TOUCH_INTERVAL_MS) {
+      const nextLog = [...log];
+      nextLog[lastIndex] = {
+        ...lastEntry,
+        lastSeenAt: toLogTimestamp(timestamp),
+      };
+      return trimUsageLog(nextLog);
+    }
+    return trimUsageLog(log);
+  }
+
+  return trimUsageLog([...log, entry]);
+}
+
+function createUsageLogEntry(usageData, weeklyFiveHourWindows, timestamp = Date.now()) {
+  const session = normalizeLogWindow(usageData?.session);
+  const weekly = normalizeLogWindow(usageData?.weekly);
+  const weeklyOpus = normalizeLogWindow(usageData?.weeklyOpus);
+  const capturedAt = toLogTimestamp(timestamp);
+
+  return {
+    schemaVersion: USAGE_LOG_SCHEMA_VERSION,
+    capturedAt,
+    lastSeenAt: capturedAt,
+    source: typeof usageData?.source === "string" ? usageData.source : "",
+    weeklyFiveHourWindows: normalizeWeeklyWindowCapacity(weeklyFiveHourWindows),
+    sessionUsedPercent: session.usedPercent,
+    sessionRemainingPercent: session.remainingPercent,
+    sessionResetsAt: session.resetsAt,
+    weeklyUsedPercent: weekly.usedPercent,
+    weeklyRemainingPercent: weekly.remainingPercent,
+    weeklyResetsAt: weekly.resetsAt,
+    opusWeeklyUsedPercent: weeklyOpus.usedPercent,
+    opusWeeklyRemainingPercent: weeklyOpus.remainingPercent,
+    opusWeeklyResetsAt: weeklyOpus.resetsAt,
+  };
+}
+
+function normalizeLogWindow(windowData) {
+  if (!windowData) {
+    return {
+      usedPercent: null,
+      remainingPercent: null,
+      resetsAt: null,
+    };
+  }
+
+  const usedPercent = clampPercentage(windowData.percentage || 0);
+  return {
+    usedPercent,
+    remainingPercent: 100 - usedPercent,
+    resetsAt: normalizeLogReset(windowData.resetsAt),
+  };
+}
+
+function normalizeLogReset(value) {
+  if (!value) return null;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? toLogTimestamp(roundToNearestMinute(timestamp)) : null;
+}
+
+function usageLogFingerprint(entry) {
+  return JSON.stringify({
+    sessionUsedPercent: entry?.sessionUsedPercent ?? null,
+    sessionRemainingPercent: entry?.sessionRemainingPercent ?? null,
+    sessionResetsAt: canonicalResetFingerprint(entry?.sessionResetsAt),
+    weeklyUsedPercent: entry?.weeklyUsedPercent ?? null,
+    weeklyRemainingPercent: entry?.weeklyRemainingPercent ?? null,
+    weeklyResetsAt: canonicalResetFingerprint(entry?.weeklyResetsAt),
+    opusWeeklyUsedPercent: entry?.opusWeeklyUsedPercent ?? null,
+    opusWeeklyRemainingPercent: entry?.opusWeeklyRemainingPercent ?? null,
+    opusWeeklyResetsAt: canonicalResetFingerprint(entry?.opusWeeklyResetsAt),
+  });
+}
+
+function compactUsageLog(log) {
+  const compacted = [];
+  let changed = false;
+
+  for (const rawEntry of log) {
+    const entry = normalizeStoredUsageLogEntry(rawEntry);
+    const lastEntry = compacted.at(-1);
+
+    if (entry !== rawEntry) changed = true;
+
+    if (lastEntry && usageLogFingerprint(lastEntry) === usageLogFingerprint(entry)) {
+      compacted[compacted.length - 1] = mergeDuplicateUsageLogEntries(lastEntry, entry);
+      changed = true;
+    } else {
+      compacted.push(entry);
+    }
+  }
+
+  return changed ? compacted : log;
+}
+
+function normalizeStoredUsageLogEntry(entry) {
+  if (!entry) return {};
+  const normalized = {
+    sessionResetsAt: normalizeLogReset(entry.sessionResetsAt),
+    weeklyResetsAt: normalizeLogReset(entry.weeklyResetsAt),
+    opusWeeklyResetsAt: normalizeLogReset(entry.opusWeeklyResetsAt),
+  };
+
+  if (
+    normalized.sessionResetsAt === (entry.sessionResetsAt || null) &&
+    normalized.weeklyResetsAt === (entry.weeklyResetsAt || null) &&
+    normalized.opusWeeklyResetsAt === (entry.opusWeeklyResetsAt || null)
+  ) {
+    return entry;
+  }
+
+  return {
+    ...entry,
+    ...normalized,
+  };
+}
+
+function mergeDuplicateUsageLogEntries(previous, next) {
+  return {
+    ...previous,
+    sessionResetsAt: normalizeLogReset(previous.sessionResetsAt),
+    weeklyResetsAt: normalizeLogReset(previous.weeklyResetsAt),
+    opusWeeklyResetsAt: normalizeLogReset(previous.opusWeeklyResetsAt),
+    lastSeenAt: latestLogTimestamp(previous.lastSeenAt || previous.capturedAt, next.lastSeenAt || next.capturedAt),
+  };
+}
+
+function trimUsageLog(log) {
+  return log.length > USAGE_LOG_LIMIT ? log.slice(-USAGE_LOG_LIMIT) : log;
+}
+
+function canonicalResetFingerprint(value) {
+  if (!value) return null;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? toLogTimestamp(roundToNearestMinute(timestamp)) : null;
+}
+
+function roundToNearestMinute(timestamp) {
+  return Math.round(timestamp / 60000) * 60000;
+}
+
+function latestLogTimestamp(left, right) {
+  const leftTimestamp = parseLogTimestamp(left);
+  const rightTimestamp = parseLogTimestamp(right);
+
+  if (!Number.isFinite(leftTimestamp)) return toLogTimestamp(rightTimestamp);
+  if (!Number.isFinite(rightTimestamp)) return toLogTimestamp(leftTimestamp);
+  return toLogTimestamp(Math.max(leftTimestamp, rightTimestamp));
+}
+
+function parseLogTimestamp(value) {
+  if (typeof value === "number") return value;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : NaN;
+}
+
+function toLogTimestamp(value) {
+  const timestamp = typeof value === "number" ? value : new Date(value).getTime();
+  return new Date(Number.isFinite(timestamp) ? timestamp : Date.now()).toISOString();
+}
+
+function normalizeWeeklyWindowCapacity(value) {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS;
+  }
+  const numeric = Number(value);
+  const rounded = Number.isFinite(numeric) ? Math.round(numeric) : DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS;
+  return Math.max(MIN_WEEKLY_FIVE_HOUR_WINDOWS, Math.min(MAX_WEEKLY_FIVE_HOUR_WINDOWS, rounded));
 }
 
 function messageLimitToPercentage(type) {

@@ -89,30 +89,39 @@ const forbiddenPatterns = [
 const errors = [];
 const enMessages = JSON.parse(read("_locales/en/messages.json"));
 
-checkManifest();
-checkPackageVersion();
-checkLocales();
-checkJavaScriptSyntax("background.js");
-checkJavaScriptSyntax("popup.js");
-checkJavaScriptSyntax("scripts/build.js");
-checkJavaScriptSyntax("scripts/release.js");
-checkTextPatterns();
-checkUrls();
-checkZipContents();
-checkUsageNormalization();
-checkPopupSummaryStatus();
-checkPopupCss();
-checkBadgeColors();
-checkPopupBarTones();
-checkPopupWeekWindow();
-
-if (errors.length) {
-  console.error("Verification failed:");
-  for (const error of errors) console.error(`- ${error}`);
+main().catch((error) => {
+  console.error(error);
   process.exit(1);
-}
+});
 
-console.log("Verification passed.");
+async function main() {
+  checkManifest();
+  checkPackageVersion();
+  checkLocales();
+  checkJavaScriptSyntax("background.js");
+  checkJavaScriptSyntax("popup.js");
+  checkJavaScriptSyntax("scripts/build.js");
+  checkJavaScriptSyntax("scripts/release.js");
+  checkTextPatterns();
+  checkUrls();
+  checkZipContents();
+  checkUsageNormalization();
+  await checkUsageLogStorage();
+  checkPopupSummaryStatus();
+  checkPopupLogExport();
+  checkPopupCss();
+  checkBadgeColors();
+  checkPopupBarTones();
+  checkPopupWeekWindow();
+
+  if (errors.length) {
+    console.error("Verification failed:");
+    for (const error of errors) console.error(`- ${error}`);
+    process.exit(1);
+  }
+
+  console.log("Verification passed.");
+}
 
 function checkManifest() {
   const manifest = JSON.parse(read("manifest.json"));
@@ -265,6 +274,184 @@ function checkUsageNormalization() {
   );
 }
 
+async function checkUsageLogStorage() {
+  const background = loadBackgroundExports();
+  const baseTime = Date.UTC(2026, 5, 24, 10, 0, 0);
+  const usage = {
+    source: "usage",
+    session: { percentage: 40, resetsAt: "2026-06-24T15:00:00.000Z" },
+    weekly: { percentage: 20, resetsAt: "2026-06-29T15:00:00.000Z" },
+    weeklyOpus: null,
+  };
+
+  const firstLog = background.updateUsageLog([], usage, 5, baseTime);
+  expectEqual(firstLog.length, 1, "First successful usage state must append one log entry.");
+  expectEqual(firstLog[0].schemaVersion, 1, "Usage log entries must carry the schema version.");
+  expectEqual(firstLog[0].weeklyFiveHourWindows, 5, "Usage log entries must store the current weekly 5h setting.");
+  expectEqual(firstLog[0].sessionRemainingPercent, 60, "Usage log entries must store session remaining percent.");
+  expectEqual(firstLog[0].weeklyRemainingPercent, 80, "Usage log entries must store weekly remaining percent.");
+  expectEqual(firstLog[0].opusWeeklyUsedPercent, null, "Missing Opus weekly usage must be stored as null.");
+
+  const sameSoon = background.updateUsageLog(firstLog, usage, 5, baseTime + 10 * 60 * 1000);
+  expectEqual(sameSoon.length, 1, "Identical quota states must not append duplicate log entries.");
+  expectEqual(
+    sameSoon[0].lastSeenAt,
+    firstLog[0].lastSeenAt,
+    "Identical quota states must not update lastSeenAt before 30 minutes."
+  );
+
+  const sameLater = background.updateUsageLog(firstLog, usage, 5, baseTime + 31 * 60 * 1000);
+  expectEqual(sameLater.length, 1, "Identical quota states after 30 minutes must still stay one entry.");
+  expectEqual(
+    sameLater[0].lastSeenAt,
+    "2026-06-24T10:31:00.000Z",
+    "Identical quota states after 30 minutes must refresh lastSeenAt."
+  );
+
+  const withStaleMetadata = background.updateUsageLog(
+    firstLog,
+    { ...usage, lastError: "Temporary failure", lastErrorAt: baseTime + 1000 },
+    5,
+    baseTime + 1000
+  );
+  expectEqual(
+    withStaleMetadata.length,
+    1,
+    "Refresh failure metadata must not create a distinct usage log fingerprint."
+  );
+
+  const changedUserSetting = background.updateUsageLog(firstLog, usage, 12, baseTime + 1000);
+  expectEqual(
+    changedUserSetting.length,
+    1,
+    "Changing the user weekly 5h setting must not create a distinct quota log fingerprint."
+  );
+
+  const changedSource = background.updateUsageLog(firstLog, { ...usage, source: "settings_usage" }, 5, baseTime + 1000);
+  expectEqual(
+    changedSource.length,
+    1,
+    "Changing only the Claude endpoint source must not create a distinct quota log fingerprint."
+  );
+
+  const jitteredReset = background.updateUsageLog(
+    firstLog,
+    {
+      ...usage,
+      session: { percentage: 40, resetsAt: "2026-06-24T15:00:00.419049+00:00" },
+      weekly: { percentage: 20, resetsAt: "2026-06-29T15:00:00.419071+00:00" },
+    },
+    5,
+    baseTime + 1000
+  );
+  expectEqual(
+    jitteredReset.length,
+    1,
+    "Sub-second reset timestamp jitter around the same minute must not create duplicate log entries."
+  );
+
+  const duplicateJitterLog = [
+    {
+      ...firstLog[0],
+      capturedAt: "2026-06-24T12:33:04.379Z",
+      lastSeenAt: "2026-06-24T12:33:04.379Z",
+      sessionResetsAt: "2026-06-24T13:39:59.648202+00:00",
+      weeklyResetsAt: "2026-06-29T19:59:59.648227+00:00",
+    },
+    {
+      ...firstLog[0],
+      capturedAt: "2026-06-24T12:38:40.186Z",
+      lastSeenAt: "2026-06-24T12:38:40.186Z",
+      sessionResetsAt: "2026-06-24T13:40:00.419049+00:00",
+      weeklyResetsAt: "2026-06-29T20:00:00.419071+00:00",
+    },
+  ];
+  const compactedJitterLog = background.updateUsageLog(
+    duplicateJitterLog,
+    {
+      ...usage,
+      session: { percentage: 40, resetsAt: "2026-06-24T13:39:59.902319+00:00" },
+      weekly: { percentage: 20, resetsAt: "2026-06-29T19:59:59.902344+00:00" },
+    },
+    5,
+    Date.UTC(2026, 5, 24, 12, 39, 0)
+  );
+  expectEqual(
+    compactedJitterLog.length,
+    1,
+    "Stored consecutive rows that only differ by reset timestamp jitter must be compacted."
+  );
+  expectEqual(
+    compactedJitterLog[0].lastSeenAt,
+    "2026-06-24T12:38:40.186Z",
+    "Compacting reset jitter duplicates must preserve the latest seen timestamp."
+  );
+  expectEqual(
+    compactedJitterLog[0].sessionResetsAt,
+    "2026-06-24T13:40:00.000Z",
+    "Compacting reset jitter duplicates must normalize reset timestamps to the nearest minute."
+  );
+
+  const changedQuota = background.updateUsageLog(
+    sameSoon,
+    { ...usage, session: { ...usage.session, percentage: 41 } },
+    5,
+    baseTime + 60 * 1000
+  );
+  expectEqual(changedQuota.length, 2, "Changed quota values must append immediately, even within 30 minutes.");
+
+  const changedReset = background.updateUsageLog(
+    changedQuota,
+    { ...usage, session: { percentage: 41, resetsAt: "2026-06-24T16:00:00.000Z" } },
+    5,
+    baseTime + 2 * 60 * 1000
+  );
+  expectEqual(changedReset.length, 3, "Changed reset timestamps must append immediately.");
+
+  const overLimitLog = Array.from({ length: 3001 }, (_unused, index) => ({
+    ...firstLog[0],
+    capturedAt: new Date(baseTime + index).toISOString(),
+    lastSeenAt: new Date(baseTime + index).toISOString(),
+    sessionResetsAt: new Date(baseTime + index * 60000).toISOString(),
+    source: `usage-${index}`,
+  }));
+  const trimmed = background.updateUsageLog(
+    overLimitLog,
+    { ...usage, source: "latest" },
+    5,
+    baseTime + 2000
+  );
+  expectEqual(trimmed.length, 3000, "Usage log storage must keep at most 3000 entries.");
+  expectEqual(trimmed[0].source, "usage-2", "Usage log trimming must keep the newest entries.");
+  expectEqual(trimmed.at(-1).source, "latest", "Usage log trimming must keep the newest appended entry.");
+
+  const payload = {
+    five_hour: { utilization: 33, resets_at: "2026-06-24T15:00:00.000Z" },
+    seven_day: { utilization: 20, resets_at: "2026-06-29T15:00:00.000Z" },
+    seven_day_opus: null,
+  };
+  const refreshBackground = loadBackgroundExports({
+    cookiesGetAll: [{ name: "session", value: "abc" }],
+    cookieGet: { value: "org-1" },
+    storageGetResult: { usageLog: [], weeklyFiveHourWindows: 7 },
+    fetch: async () => ({
+      ok: true,
+      json: async () => payload,
+    }),
+  });
+  await refreshBackground.refreshUsage();
+  expectEqual(
+    refreshBackground.__storageState.usageLog?.length,
+    1,
+    "A successful background refresh must persist one usage log entry."
+  );
+  expectEqual(
+    refreshBackground.__storageState.usageLog?.[0]?.weeklyFiveHourWindows,
+    7,
+    "Background refresh logging must use the stored weekly 5h setting."
+  );
+}
+
 function checkPopupSummaryStatus() {
   const popup = loadPopupExports();
 
@@ -386,6 +573,64 @@ function checkPopupSummaryStatus() {
   expectTruthy(
     popup.elements.content.innerHTML.includes("Usage unavailable"),
     "Error states must still render the error message."
+  );
+}
+
+function checkPopupLogExport() {
+  const popup = loadPopupExports();
+  const reset = new Date(Date.now() + 48 * 3600000).toISOString();
+
+  popup.exports.renderUsage({
+    session: { percentage: 10, resetsAt: reset },
+    weekly: { percentage: 20, resetsAt: reset },
+    lastUpdated: Date.now(),
+  });
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("data-usage-log-download") &&
+      popup.elements.content.innerHTML.includes('data-log-download-tooltip="Download logs"') &&
+      popup.elements.content.innerHTML.includes('aria-label="Download logs"'),
+    "Weekly controls must render an accessible Download logs tooltip button beside the help icon."
+  );
+  expectEqual(
+    popup.elements.content.innerHTML.includes('title="Download logs"'),
+    false,
+    "The Download logs control must use a custom tooltip instead of a native title attribute."
+  );
+
+  const csv = popup.exports.usageLogToCsv([
+    {
+      capturedAt: "2026-06-24T10:00:00.000Z",
+      lastSeenAt: "2026-06-24T10:30:00.000Z",
+      source: "usage,\"quoted\"",
+      weeklyFiveHourWindows: 9,
+      sessionUsedPercent: 10,
+      sessionRemainingPercent: 90,
+      sessionResetsAt: "line\nbreak",
+      weeklyUsedPercent: 20,
+      weeklyRemainingPercent: 80,
+      weeklyResetsAt: "2026-06-29T10:00:00.000Z",
+      opusWeeklyUsedPercent: null,
+      opusWeeklyRemainingPercent: null,
+      opusWeeklyResetsAt: null,
+    },
+  ]);
+  expectTruthy(
+    csv.startsWith("captured_at,last_seen_at,source,session_used_percent,"),
+    "CSV export must start with the expected header columns."
+  );
+  expectEqual(
+    csv.includes("weekly_five_hour_windows"),
+    false,
+    "CSV export must not include the user weekly 5h setting column."
+  );
+  expectTruthy(
+    csv.includes('"usage,""quoted"""') && csv.includes('"line\nbreak"'),
+    "CSV export must escape commas, quotes, and newlines."
+  );
+  expectEqual(
+    popup.exports.usageLogFilename(new Date(2026, 5, 24, 9, 8, 7)),
+    "quotalis-usage-log-2026-06-24-09-08-07.csv",
+    "CSV export filename must use the expected timestamp format."
   );
 }
 
@@ -825,8 +1070,10 @@ function checkPopupWeekWindow() {
   );
 }
 
-function loadBackgroundExports(actionOverrides = {}) {
+function loadBackgroundExports(options = {}) {
   const listener = { addListener() {} };
+  const storageState = { ...(options.storageGetResult || {}) };
+  const storageSets = [];
   const context = {
     chrome: {
       runtime: {
@@ -839,30 +1086,66 @@ function loadBackgroundExports(actionOverrides = {}) {
         create() {},
       },
       cookies: {
-        getAll: async () => [],
-        get: async () => null,
+        getAll: async () => options.cookiesGetAll || [],
+        get: async (details) => typeof options.cookieGet === "function"
+          ? options.cookieGet(details)
+          : options.cookieGet || null,
       },
       storage: {
         local: {
-          get: async () => ({}),
-          set: async () => {},
+          get: async (keys) => selectStorageValues(storageState, keys),
+          set: async (value) => {
+            storageSets.push(value);
+            Object.assign(storageState, value);
+          },
         },
       },
       action: {
-        setBadgeText: actionOverrides.setBadgeText || (() => {}),
-        setBadgeBackgroundColor: actionOverrides.setBadgeBackgroundColor || (() => {}),
+        setBadgeText: options.setBadgeText || (() => {}),
+        setBadgeBackgroundColor: options.setBadgeBackgroundColor || (() => {}),
       },
       i18n: {
         getMessage: (key) => key,
       },
     },
-    fetch: async () => ({ ok: false }),
+    fetch: options.fetch || (async () => ({ ok: false })),
   };
 
-  return loadScriptExports("background.js", context, [
+  const exports = loadScriptExports("background.js", context, [
+    "refreshUsage",
     "normalizeUsageResponse",
+    "updateUsageLog",
     "updateBadge",
   ]);
+  exports.__storageSets = storageSets;
+  exports.__storageState = storageState;
+  return exports;
+}
+
+function selectStorageValues(storageState, keys) {
+  if (keys === null || keys === undefined) return { ...storageState };
+
+  if (Array.isArray(keys)) {
+    return keys.reduce((result, key) => {
+      result[key] = storageState[key];
+      return result;
+    }, {});
+  }
+
+  if (typeof keys === "string") {
+    return { [keys]: storageState[keys] };
+  }
+
+  if (typeof keys === "object") {
+    return Object.keys(keys).reduce((result, key) => {
+      result[key] = Object.prototype.hasOwnProperty.call(storageState, key)
+        ? storageState[key]
+        : keys[key];
+      return result;
+    }, {});
+  }
+
+  return { ...storageState };
 }
 
 function loadPopupExports(options = {}) {
@@ -870,6 +1153,9 @@ function loadPopupExports(options = {}) {
   const storageSets = [];
   const document = {
     documentElement: {},
+    body: {
+      appendChild() {},
+    },
     addEventListener() {},
     querySelectorAll: () => [],
     getElementById(id) {
@@ -922,6 +1208,9 @@ function loadPopupExports(options = {}) {
       "loadStoredUsage",
       "normalizeWeeklyWindowCapacity",
       "formatResetDateTime",
+      "usageLogToCsv",
+      "csvCell",
+      "usageLogFilename",
     ]
   );
 
@@ -970,6 +1259,8 @@ function createElementStub(id = "") {
       },
     },
     addEventListener() {},
+    click() {},
+    remove() {},
     setAttribute(name, value) {
       this[name] = value;
     },
