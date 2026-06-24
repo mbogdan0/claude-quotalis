@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 h/semana"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "Janelas de cinco horas por semana"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "Quantas janelas de cota de 5 horas cabem no seu limite semanal. Isso afeta apenas as estimativas das janelas semanais."
+  },
   "weekWindowLabel": {
     "message": "Janela de cota de 7 dias"
   }

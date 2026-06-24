@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 jam/minggu"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "Jendela lima jam per minggu"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "Berapa banyak jendela kuota 5 jam yang muat dalam batas mingguan Anda. Ini hanya memengaruhi perkiraan jendela mingguan."
+  },
   "weekWindowLabel": {
     "message": "Jendela kuota 7 hari"
   }

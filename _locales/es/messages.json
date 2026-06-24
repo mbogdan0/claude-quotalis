@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 h/semana"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "Ventanas de cinco horas por semana"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "Cuántas ventanas de cuota de 5 horas caben en tu límite semanal. Esto solo afecta las estimaciones de ventanas semanales."
+  },
   "weekWindowLabel": {
     "message": "Ventana de cuota de 7 días"
   }

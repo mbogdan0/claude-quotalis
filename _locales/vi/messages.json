@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 giờ/tuần"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "Cửa sổ năm giờ mỗi tuần"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "Số cửa sổ hạn mức 5 giờ phù hợp với giới hạn hằng tuần của bạn. Điều này chỉ ảnh hưởng đến ước tính cửa sổ hằng tuần."
+  },
   "weekWindowLabel": {
     "message": "Cửa sổ hạn mức 7 ngày"
   }

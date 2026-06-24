@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 год/тиждень"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "П'ятигодинні вікна на тиждень"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "Скільки 5-годинних вікон квоти вміщується у ваш тижневий ліміт. Це впливає лише на оцінки тижневих вікон."
+  },
   "weekWindowLabel": {
     "message": "Вікно квоти на 7 днів"
   }

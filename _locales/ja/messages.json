@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5時間/週"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "週あたりの5時間枠"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "週間上限に収まる5時間のクォータ枠の数です。週間枠の見積もりにのみ影響します。"
+  },
   "weekWindowLabel": {
     "message": "7 日間のクォータ枠"
   }

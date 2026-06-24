@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5h/week"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "Five-hour windows per week"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "How many 5-hour quota windows fit in your weekly limit. This only affects weekly window estimates."
+  },
   "weekWindowLabel": {
     "message": "7-day quota window"
   }

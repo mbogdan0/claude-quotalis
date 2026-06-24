@@ -1,17 +1,28 @@
 const content = document.getElementById("content");
 const refreshButton = document.getElementById("refreshButton");
-const WEEKLY_FIVE_HOUR_WINDOWS = 9;
-const DAILY_FIVE_HOUR_WINDOW_PACE = WEEKLY_FIVE_HOUR_WINDOWS / 7;
+const WEEKLY_WINDOW_STORAGE_KEY = "weeklyFiveHourWindows";
+const INCLUDE_TODAY_STORAGE_KEY = "includeTodayInWeekWindow";
+const DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS = 9;
+const MIN_WEEKLY_FIVE_HOUR_WINDOWS = 1;
+const MAX_WEEKLY_FIVE_HOUR_WINDOWS = 500;
 const DAY_MS = 86400000;
 const WINDOW_DAYS = 7;
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 let currentUsageData = null;
 let lastWeekWindowHtml = "";
+let includeTodayInWeekWindow = false;
+let weeklyFiveHourWindows = DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS;
 
 document.addEventListener("DOMContentLoaded", initializePopup);
 
 function initializePopup() {
+  includeTodayInWeekWindow = false;
+  lastWeekWindowHtml = "";
   localizeDocument();
   refreshButton.addEventListener("click", () => refreshUsage());
+  content.addEventListener("click", handleWeekWindowToggle);
+  content.addEventListener("keydown", handleWeekWindowToggle);
+  content.addEventListener("change", handleWeeklyWindowInputChange);
   loadStoredUsage();
   setInterval(updateLiveLabels, 1000);
 }
@@ -36,7 +47,10 @@ function localizeDocument() {
 function loadStoredUsage() {
   // Read the cache directly so the popup paints instantly without waking the
   // (possibly terminated) service worker, then refresh in the background.
-  chrome.storage.local.get("usageData", ({ usageData }) => {
+  chrome.storage.local.get(["usageData", WEEKLY_WINDOW_STORAGE_KEY, INCLUDE_TODAY_STORAGE_KEY], (stored) => {
+    weeklyFiveHourWindows = normalizeWeeklyWindowCapacity(stored?.[WEEKLY_WINDOW_STORAGE_KEY]);
+    includeTodayInWeekWindow = Boolean(stored?.[INCLUDE_TODAY_STORAGE_KEY]);
+    const usageData = stored?.usageData;
     if (usageData) renderUsage(usageData);
     refreshUsage({ showLoader: !usageData });
   });
@@ -66,6 +80,8 @@ function showLoading() {
 
 function renderUsage(usageData) {
   currentUsageData = usageData;
+  lastWeekWindowHtml = "";
+  updateUpdatedValue(usageData);
 
   // Full error screen only when there is no usable data to show.
   if (!usageData.session) {
@@ -172,16 +188,42 @@ function barTone(remaining, reset, toneMode = "session") {
 function weeklyFooter(usageData) {
   return `
     <div class="weekly-footer" aria-live="polite">
-      <div class="weekly-updated">
-        <span class="summary-label">${escapeHtml(message("summaryUpdatedLabel"))}</span>
-        <span class="summary-separator" aria-hidden="true">·</span>
-        <strong id="updatedValue">${escapeHtml(formatUpdatedRelative(usageData.lastUpdated))}</strong>
+      <div class="weekly-window-setting">
+        <label for="weeklyWindowInput">${escapeHtml(message("weeklyWindowSettingLabel"))}</label>
+        <input id="weeklyWindowInput" class="weekly-window-input" type="number" min="${MIN_WEEKLY_FIVE_HOUR_WINDOWS}" max="${MAX_WEEKLY_FIVE_HOUR_WINDOWS}" step="1" value="${weeklyFiveHourWindows}" aria-label="${escapeHtml(message("weeklyWindowSettingInputAria"))}">
+        <span class="weekly-window-help" tabindex="0" role="img" aria-label="${escapeHtml(message("weeklyWindowSettingHelp"))}" data-weekly-window-tooltip="${escapeHtml(message("weeklyWindowSettingHelp"))}">?</span>
       </div>
       <div class="weekly-actions" id="weeklyWindow">
-        ${weekWindow(usageData.weekly)}
+        ${weekWindow(usageData.weekly, { includeToday: includeTodayInWeekWindow, weeklyWindows: weeklyFiveHourWindows })}
       </div>
     </div>
   `;
+}
+
+function handleWeekWindowToggle(event) {
+  const target = event.target?.closest?.("[data-week-window-toggle]");
+  if (!target) return;
+
+  if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+
+  includeTodayInWeekWindow = !includeTodayInWeekWindow;
+  lastWeekWindowHtml = "";
+  chrome.storage.local.set({ [INCLUDE_TODAY_STORAGE_KEY]: includeTodayInWeekWindow });
+  updateWeeklyFooterState(currentUsageData?.weekly);
+}
+
+function handleWeeklyWindowInputChange(event) {
+  const target = event.target?.closest?.("#weeklyWindowInput");
+  if (!target) return;
+
+  const nextValue = normalizeWeeklyWindowCapacity(target.value);
+  weeklyFiveHourWindows = nextValue;
+  target.value = String(nextValue);
+  lastWeekWindowHtml = "";
+  chrome.storage.local.set({ [WEEKLY_WINDOW_STORAGE_KEY]: nextValue });
+
+  if (currentUsageData) renderUsage(currentUsageData);
 }
 
 function updateUpdatedValue(usageData) {
@@ -199,22 +241,23 @@ function updateWeeklyFooterState(weeklyData) {
   // Only repaint when the strip actually changes (a day or reset boundary
   // crossed). Repainting every tick would wipe the cell under the cursor and
   // make the hover tooltip flicker.
-  const next = weekWindow(weeklyData);
+  const next = weekWindow(weeklyData, { includeToday: includeTodayInWeekWindow, weeklyWindows: weeklyFiveHourWindows });
   if (next === lastWeekWindowHtml && host.innerHTML) return;
   lastWeekWindowHtml = next;
   host.innerHTML = next;
 }
 
-function hasWeeklyCapacityBuffer(remaining, reset) {
-  const capacity = weeklyCapacity(remaining, reset);
-  return Boolean(capacity && capacity.windowsPerDay >= DAILY_FIVE_HOUR_WINDOW_PACE);
+function hasWeeklyCapacityBuffer(remaining, reset, weeklyWindows = weeklyFiveHourWindows) {
+  const capacity = weeklyCapacity(remaining, reset, weeklyWindows);
+  return Boolean(capacity && capacity.windowsPerDay >= capacity.neededPerDay);
 }
 
-function weeklyCapacity(remaining, reset) {
+function weeklyCapacity(remaining, reset, weeklyWindows = weeklyFiveHourWindows) {
   const resetIn = millisecondsUntil(reset);
   if (!Number.isFinite(resetIn) || resetIn <= 0) return null;
 
-  const remainingWindows = clampPercentage(remaining) / 100 * WEEKLY_FIVE_HOUR_WINDOWS;
+  const normalizedWeeklyWindows = normalizeWeeklyWindowCapacity(weeklyWindows);
+  const remainingWindows = clampPercentage(remaining) / 100 * normalizedWeeklyWindows;
   const daysUntilReset = resetIn / DAY_MS;
   if (daysUntilReset <= 0) return null;
 
@@ -222,22 +265,29 @@ function weeklyCapacity(remaining, reset) {
     remainingWindows,
     daysUntilReset,
     windowsPerDay: remainingWindows / daysUntilReset,
-    neededPerDay: DAILY_FIVE_HOUR_WINDOW_PACE,
+    neededPerDay: normalizedWeeklyWindows / WINDOW_DAYS,
   };
 }
 
-function weekWindowDays(weeklyData, now = new Date()) {
-  const resetDate = weeklyData?.resetsAt ? new Date(weeklyData.resetsAt) : null;
-  const hasReset = resetDate && Number.isFinite(resetDate.getTime());
+function weekWindowDays(weeklyData, now = new Date(), options = {}) {
+  const includeToday = Boolean(options.includeToday);
+  const weeklyWindows = normalizeWeeklyWindowCapacity(options.weeklyWindows ?? weeklyFiveHourWindows);
+  const rawResetDate = weeklyData?.resetsAt ? new Date(weeklyData.resetsAt) : null;
+  const hasReset = rawResetDate && Number.isFinite(rawResetDate.getTime());
+  const resetDate = hasReset ? normalizeWeekWindowResetDate(rawResetDate) : null;
 
   if (!hasReset) {
-    // No reset timestamp: render a neutral, tooltip-less strip.
-    return Array.from({ length: WINDOW_DAYS }, () => ({
-      state: "past",
-      weekend: false,
-      windows: null,
-      tooltip: null,
-    }));
+    // No reset timestamp: render a neutral strip anchored on the current week.
+    const neutralLastDay = startOfDay(now);
+    return Array.from({ length: WINDOW_DAYS }, (_unused, index) => {
+      const date = addDays(neutralLastDay, index - (WINDOW_DAYS - 1));
+      return {
+        state: "past",
+        weekend: isWeekend(date),
+        windows: null,
+        tooltip: weekdayLabel(date),
+      };
+    });
   }
 
   const today = startOfDay(now);
@@ -262,53 +312,83 @@ function weekWindowDays(weeklyData, now = new Date()) {
   });
   const weekends = dates.map((date) => isWeekend(date));
 
-  // Today is only a "you are here" marker: its spend so far and what's left of
-  // it are unknowable, so we never put a number on it. The remaining budget is
-  // spread evenly across every full day ahead until the reset — weekdays from
-  // tomorrow through the reset day (weekends spend nothing). This counts the
-  // true horizon, not the visible cells, so a clamped strip still divides by
-  // the real number of days until the quota refreshes.
+  // By default today is only a "you are here" marker: its spend so far and
+  // what's left of it are unknowable, so the remaining budget is spread across
+  // full weekdays ahead. The toggle includes today in that even split.
   const remaining = 100 - clampPercentage(weeklyData.percentage || 0);
-  const remainingWindows = (remaining / 100) * WEEKLY_FIVE_HOUR_WINDOWS;
+  const remainingWindows = (remaining / 100) * weeklyWindows;
   const resetDayTime = startOfDay(resetDate).getTime();
   let usableDays = 0;
-  for (let cursor = addDays(today, 1); cursor.getTime() <= resetDayTime; cursor = addDays(cursor, 1)) {
+  const firstAllocationDay = includeToday ? today : addDays(today, 1);
+  for (let cursor = firstAllocationDay; cursor.getTime() <= resetDayTime; cursor = addDays(cursor, 1)) {
     if (!isWeekend(cursor)) usableDays += 1;
   }
   const perDay = usableDays > 0 ? remainingWindows / usableDays : 0;
 
-  return dates.map((_date, index) => {
+  return dates.map((date, index) => {
     const state = states[index];
     const weekend = weekends[index];
+    const tooltipParts = [weekdayLabel(date)];
     let windows = null;
-    let tooltip = null;
+
     if (state === "today") {
-      tooltip = message("dayToday");
+      if (weekend) {
+        windows = 0;
+        tooltipParts.push(zeroWindowsLabel());
+      } else if (includeToday) {
+        windows = perDay;
+        tooltipParts.push(message("dayWindows", [formatDecimal(perDay, 1)]));
+      }
     } else if (state === "future") {
       windows = weekend ? 0 : perDay;
-      tooltip = weekend
-        ? message("dayWeekend")
-        : message("dayWindows", [formatDecimal(perDay, 1)]);
+      tooltipParts.push(weekend ? zeroWindowsLabel() : message("dayWindows", [formatDecimal(perDay, 1)]));
     }
-    return { state, weekend, windows, tooltip };
+
+    return { state, weekend, windows, tooltip: tooltipParts.join(" · ") };
   });
 }
 
-function weekWindow(weeklyData) {
-  const cells = weekWindowDays(weeklyData)
+function weekWindow(weeklyData, options = {}) {
+  const includeToday = Boolean(options.includeToday);
+  const weeklyWindows = normalizeWeeklyWindowCapacity(options.weeklyWindows ?? weeklyFiveHourWindows);
+  const cells = weekWindowDays(weeklyData, new Date(), { includeToday, weeklyWindows })
     .map((cell) => {
       // The weekend "excluded / 0" look only applies to upcoming days; past and
       // current weekends just use their state styling.
       const weekendClass = cell.weekend && cell.state === "future" ? " day-cell--weekend" : "";
-      const className = `day-cell day-cell--${cell.state}${weekendClass}`;
+      const activeClass = cell.state === "today" && includeToday ? " day-cell--today-active" : "";
+      const className = `day-cell day-cell--${cell.state}${weekendClass}${activeClass}`;
       const tooltip = cell.tooltip
         ? ` data-day-tooltip="${escapeHtml(cell.tooltip)}" tabindex="0"`
         : "";
-      return `<span class="${className}"${tooltip}></span>`;
+      const toggle = cell.state === "today"
+        ? ` data-week-window-toggle="true" role="button" aria-pressed="${includeToday ? "true" : "false"}" aria-label="${escapeHtml(cell.tooltip)}"`
+        : "";
+      return `<span class="${className}"${tooltip}${toggle}></span>`;
     })
     .join("");
 
-  return `<div class="week-window" role="img" aria-label="${escapeHtml(message("weekWindowLabel"))}">${cells}</div>`;
+  return `<div class="week-window" role="group" aria-label="${escapeHtml(message("weekWindowLabel"))}">${cells}</div>`;
+}
+
+function weekdayLabel(value) {
+  return WEEKDAY_LABELS[new Date(value).getDay()];
+}
+
+function zeroWindowsLabel() {
+  return "0 windows";
+}
+
+function normalizeWeekWindowResetDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return date;
+
+  if (date.getHours() === 0) {
+    date.setDate(date.getDate() - 1);
+    date.setHours(23, 59, 59, 999);
+  }
+
+  return date;
 }
 
 function startOfDay(value) {
@@ -406,6 +486,15 @@ function formatResetDateTime(value) {
 
 function clampPercentage(value) {
   return Math.max(0, Math.min(100, Number.isFinite(value) ? Math.round(value) : 0));
+}
+
+function normalizeWeeklyWindowCapacity(value) {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS;
+  }
+  const numeric = Number(value);
+  const rounded = Number.isFinite(numeric) ? Math.round(numeric) : DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS;
+  return Math.max(MIN_WEEKLY_FIVE_HOUR_WINDOWS, Math.min(MAX_WEEKLY_FIVE_HOUR_WINDOWS, rounded));
 }
 
 function escapeHtml(value) {

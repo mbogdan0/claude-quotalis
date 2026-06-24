@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 Std./Woche"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "Fünf-Stunden-Fenster pro Woche"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "Wie viele 5-Stunden-Kontingentfenster in dein Wochenlimit passen. Dies betrifft nur die Schätzungen der Wochenfenster."
+  },
   "weekWindowLabel": {
     "message": "7-Tage-Kontingentfenster"
   }

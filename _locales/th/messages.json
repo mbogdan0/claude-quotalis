@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 ชม./สัปดาห์"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "ช่วงเวลา 5 ชั่วโมงต่อสัปดาห์"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "จำนวนช่วงโควตา 5 ชั่วโมงที่อยู่ในขีดจำกัดรายสัปดาห์ของคุณได้ ค่านี้มีผลเฉพาะการประมาณช่วงรายสัปดาห์เท่านั้น"
+  },
   "weekWindowLabel": {
     "message": "หน้าต่างโควตา 7 วัน"
   }

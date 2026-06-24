@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 h/semaine"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "Fenêtres de cinq heures par semaine"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "Nombre de fenêtres de quota de 5 heures dans votre limite hebdomadaire. Cela affecte uniquement les estimations des fenêtres hebdomadaires."
+  },
   "weekWindowLabel": {
     "message": "Fenêtre de quota sur 7 jours"
   }

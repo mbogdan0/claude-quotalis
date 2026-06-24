@@ -158,6 +158,15 @@
       }
     }
   },
+  "weeklyWindowSettingLabel": {
+    "message": "5 小时/周"
+  },
+  "weeklyWindowSettingInputAria": {
+    "message": "每周五小时窗口数"
+  },
+  "weeklyWindowSettingHelp": {
+    "message": "你的每周限额可容纳多少个 5 小时配额窗口。这只会影响每周窗口估算。"
+  },
   "weekWindowLabel": {
     "message": "7 天配额窗口"
   }

@@ -12,6 +12,9 @@ const requiredMessageKeys = [
   "popupHeading",
   "refreshUsage",
   "summaryUpdatedLabel",
+  "weeklyWindowSettingLabel",
+  "weeklyWindowSettingInputAria",
+  "weeklyWindowSettingHelp",
   "never",
   "readingUsage",
   "footerGithubAria",
@@ -84,6 +87,7 @@ const forbiddenPatterns = [
 ];
 
 const errors = [];
+const enMessages = JSON.parse(read("_locales/en/messages.json"));
 
 checkManifest();
 checkPackageVersion();
@@ -155,6 +159,17 @@ function checkLocales() {
     const extraKeys = Object.keys(messages).filter((key) => !requiredMessageKeys.includes(key));
     if (extraKeys.length) {
       errors.push(`${file} contains unexpected message keys: ${extraKeys.join(", ")}.`);
+    }
+
+    if (locale !== "en") {
+      const untranslatedWeeklyWindowKeys = [
+        "weeklyWindowSettingLabel",
+        "weeklyWindowSettingInputAria",
+        "weeklyWindowSettingHelp",
+      ].filter((key) => messages[key]?.message === enMessages[key]?.message);
+      if (untranslatedWeeklyWindowKeys.length) {
+        errors.push(`${file} contains untranslated weekly window keys: ${untranslatedWeeklyWindowKeys.join(", ")}.`);
+      }
     }
   }
 }
@@ -263,11 +278,41 @@ function checkPopupSummaryStatus() {
   expectEqual(
     popup.elements.updatedValue.textContent,
     "now",
-    "Plan fields must not affect the compact weekly Updated status."
+    "Plan fields must not affect the compact header Updated status."
+  );
+  expectTruthy(
+    read("popup.html").includes('class="header-status"') &&
+      read("popup.html").includes('id="updatedValue"'),
+    "Updated status must render under the popup heading."
   );
   expectTruthy(
     popup.elements.content.innerHTML.includes("weekly-footer"),
-    "Updated status must render inside the weekly footer."
+    "Weekly controls must render inside the weekly footer."
+  );
+  expectEqual(
+    popup.elements.content.innerHTML.includes("weekly-updated"),
+    false,
+    "The old footer Updated status must not render inside the weekly footer."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes('id="weeklyWindowInput"'),
+    "Weekly footer must render the saved five-hour-window capacity input."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes('type="number"') &&
+      popup.elements.content.innerHTML.includes('min="1"') &&
+      popup.elements.content.innerHTML.includes('max="500"') &&
+      popup.elements.content.innerHTML.includes('step="1"'),
+    "Weekly capacity input must be a compact clamped integer number input."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("weeklyWindowSettingInputAria"),
+    "Weekly capacity input must expose an accessible label."
+  );
+  expectTruthy(
+    popup.elements.content.innerHTML.includes("data-weekly-window-tooltip=") &&
+      popup.elements.content.innerHTML.includes('tabindex="0"'),
+    "Weekly capacity help icon must render a keyboard-focusable tooltip."
   );
   expectTruthy(
     popup.elements.content.innerHTML.includes("week-window"),
@@ -358,6 +403,24 @@ function checkPopupCss() {
     css.includes(".reset-time[data-reset-tooltip]:focus-visible::after"),
     "Reset tooltip CSS must expose the tooltip on keyboard focus."
   );
+  expectTruthy(
+    css.includes(".weekly-window-help[data-weekly-window-tooltip]:focus-visible::after"),
+    "Weekly capacity tooltip CSS must expose the tooltip on keyboard focus."
+  );
+  expectTruthy(
+      css.includes(".weekly-window-help[data-weekly-window-tooltip]::after") &&
+      css.includes("left: 50%;") &&
+      css.includes("width: 220px;") &&
+      css.includes("transform: translate(-45%, 2px);") &&
+      css.includes("transform: translate(-45%, 0);") &&
+      css.includes("white-space: normal;"),
+    "Weekly capacity tooltip must be centered with a left bias and wrap inside the popup."
+  );
+  expectTruthy(
+    css.includes(".day-cell[data-day-tooltip]::after") &&
+      css.includes("right: 6px;"),
+    "Day-square tooltips must be shifted left from their anchors."
+  );
 }
 
 function checkBadgeColors() {
@@ -436,16 +499,122 @@ function checkPopupWeekWindow() {
   expectEqual(week.length, 7, "The 7-day window must always render seven cells.");
   expectEqual(week[6].state, "future", "The last cell is the reset day, in the future here.");
   expectEqual(week[1].state, "today", "Today must be detected inside the window.");
-  expectEqual(week[1].tooltip, "dayToday", "Today shows a plain Today tooltip.");
+  expectEqual(week[1].tooltip, "Wed", "Today tooltip must only show the three-letter weekday label.");
   expectEqual(week[1].windows, null, "Today must not expose a per-day window count.");
   expectEqual(week[0].state, "past", "Days before today are in the past.");
-  expectEqual(week[0].tooltip, null, "Past days have no tooltip.");
+  expectEqual(week[0].tooltip, "Tue", "Past days show the three-letter weekday tooltip.");
   expectEqual(week[4].weekend, true, "Saturday must be flagged as a weekend cell.");
   expectEqual(week[4].windows, 0, "Future weekend days always allow zero windows.");
-  expectEqual(week[4].tooltip, "dayWeekend", "Future weekend days use the weekend tooltip.");
+  expectEqual(week[4].tooltip, "Sat · 0 windows", "Future weekend tooltips must show zero without the Weekend label.");
+  expectEqual(week[2].tooltip, "Thu · ~3.0 × 5h windows", "Future weekday tooltips must include the weekday label.");
+  expectEqual(
+    week.some((cell) => /dayToday|Today|dayWeekend|Weekend/.test(cell.tooltip)),
+    false,
+    "Day-square tooltips must not spell out Today or Weekend."
+  );
   // Today carries no number; budget spreads over full future weekdays only:
   // remainingWindows = 9; future weekdays = Thu + Fri + Mon = 3 -> 3/day.
   expectEqual(week[2].windows, 9 / 3, "Future weekdays split remaining windows over the full days ahead, excluding today.");
+
+  const includedTodayWeek = popup.exports.weekWindowDays(
+    { percentage: 0, resetsAt: monReset },
+    wednesday,
+    { includeToday: true }
+  );
+  expectEqual(
+    includedTodayWeek[1].windows,
+    9 / 4,
+    "Include-today mode gives weekday today an even share of the remaining windows."
+  );
+  expectEqual(
+    includedTodayWeek[1].tooltip,
+    "Wed · ~2.3 × 5h windows",
+    "Include-today mode shows the weekday and window count on today."
+  );
+  expectEqual(
+    includedTodayWeek[2].windows,
+    9 / 4,
+    "Include-today mode lowers future weekday windows by counting today in the divisor."
+  );
+
+  const customCapacityWeek = popup.exports.weekWindowDays(
+    { percentage: 0, resetsAt: monReset },
+    wednesday,
+    { includeToday: true, weeklyWindows: 12 }
+  );
+  expectEqual(
+    customCapacityWeek[1].windows,
+    12 / 4,
+    "Custom weekly capacity must drive include-today weekday math."
+  );
+  expectEqual(
+    customCapacityWeek[1].tooltip,
+    "Wed · ~3.0 × 5h windows",
+    "Custom weekly capacity must update rendered window-count tooltip text."
+  );
+
+  const saturday = new Date(2026, 5, 27, 10, 0, 0);
+  const weekendTodayWeek = popup.exports.weekWindowDays(
+    { percentage: 0, resetsAt: monReset },
+    saturday,
+    { includeToday: true }
+  );
+  expectEqual(weekendTodayWeek[4].state, "today", "Saturday must be detected as today in the weekend case.");
+  expectEqual(weekendTodayWeek[4].weekend, true, "Weekend today must still be marked as a weekend.");
+  expectEqual(weekendTodayWeek[4].windows, 0, "Weekend today must always allow zero windows.");
+  expectEqual(
+    weekendTodayWeek[4].tooltip,
+    "Sat · 0 windows",
+    "Weekend today tooltip must show the weekday and zero-window text."
+  );
+  expectEqual(
+    weekendTodayWeek[6].windows,
+    9,
+    "Include-today mode excludes weekend days from the divisor even when today is a weekend."
+  );
+
+  const tuesdayMidnightReset = new Date(2026, 5, 30, 0, 0, 0).toISOString();
+  const normalizedMidnightWeek = popup.exports.weekWindowDays(
+    { percentage: 0, resetsAt: tuesdayMidnightReset },
+    wednesday
+  );
+  expectEqual(
+    normalizedMidnightWeek[6].tooltip,
+    "Mon · ~3.0 × 5h windows",
+    "A Tuesday 00:00 weekly reset must normalize to Monday end for square anchoring."
+  );
+  expectEqual(
+    normalizedMidnightWeek[2].windows,
+    9 / 3,
+    "A Tuesday 00:00 weekly reset must exclude Tuesday from default divisor math."
+  );
+
+  const tuesdayFirstHourReset = new Date(2026, 5, 30, 0, 59, 59).toISOString();
+  const normalizedFirstHourWeek = popup.exports.weekWindowDays(
+    { percentage: 0, resetsAt: tuesdayFirstHourReset },
+    wednesday
+  );
+  expectEqual(
+    normalizedFirstHourWeek[6].tooltip,
+    "Mon · ~3.0 × 5h windows",
+    "A Tuesday reset during the first local hour must normalize to Monday end."
+  );
+
+  const tuesdayOneAmReset = new Date(2026, 5, 30, 1, 0, 0).toISOString();
+  const unnormalizedOneAmWeek = popup.exports.weekWindowDays(
+    { percentage: 0, resetsAt: tuesdayOneAmReset },
+    wednesday
+  );
+  expectEqual(
+    unnormalizedOneAmWeek[6].tooltip,
+    "Tue · ~2.3 × 5h windows",
+    "A Tuesday 01:00 weekly reset must stay on Tuesday."
+  );
+  expectEqual(
+    unnormalizedOneAmWeek[1].windows,
+    9 / 4,
+    "A Tuesday 01:00 weekly reset must include Tuesday in default divisor math."
+  );
 
   // The result must not depend on the time of day (no 18:00 cutoff anymore).
   const evening = new Date(2026, 5, 24, 19, 0, 0);
@@ -475,9 +644,184 @@ function checkPopupWeekWindow() {
   const noReset = popup.exports.weekWindowDays({ percentage: 50, resetsAt: null });
   expectEqual(noReset.length, 7, "Missing reset still renders a seven-cell strip.");
   expectEqual(
-    noReset.every((cell) => cell.tooltip === null),
+    noReset.every((cell) => typeof cell.tooltip === "string" && cell.tooltip.length === 3),
     true,
-    "Without a reset time, cells carry no tooltips."
+    "Without a reset time, cells still carry three-letter weekday tooltips."
+  );
+
+  const htmlReset = new Date(Date.now() + 72 * 3600000).toISOString();
+  const defaultHtml = popup.exports.weekWindow({ percentage: 0, resetsAt: htmlReset });
+  expectTruthy(
+    defaultHtml.includes('data-week-window-toggle="true"'),
+    "Rendered week window must make today toggleable."
+  );
+  expectTruthy(
+    defaultHtml.includes('aria-pressed="false"'),
+    "Rendered default week window must expose the unpressed today toggle state."
+  );
+  expectEqual(
+    defaultHtml.includes("day-cell--today-active"),
+    false,
+    "Rendered default week window must not use the active today style."
+  );
+
+  const includedHtml = popup.exports.weekWindow(
+    { percentage: 0, resetsAt: htmlReset },
+    { includeToday: true }
+  );
+  expectTruthy(
+    includedHtml.includes('aria-pressed="true"'),
+    "Rendered include-today week window must expose the pressed today toggle state."
+  );
+  expectTruthy(
+    includedHtml.includes("day-cell--today-active"),
+    "Rendered include-today week window must use the active today style."
+  );
+  const customHtml = popup.exports.weekWindow(
+    { percentage: 0, resetsAt: monReset },
+    { includeToday: true, weeklyWindows: 12 }
+  );
+  expectTruthy(
+    customHtml.includes("~3.0 × 5h windows"),
+    "Rendered week window must use the custom weekly capacity."
+  );
+
+  expectEqual(
+    popup.exports.normalizeWeeklyWindowCapacity(undefined),
+    9,
+    "Missing weekly capacity must default to nine five-hour windows."
+  );
+  expectEqual(
+    popup.exports.normalizeWeeklyWindowCapacity(0),
+    1,
+    "Weekly capacity must clamp values below one."
+  );
+  expectEqual(
+    popup.exports.normalizeWeeklyWindowCapacity(501),
+    500,
+    "Weekly capacity must clamp values above five hundred."
+  );
+  expectEqual(
+    popup.exports.normalizeWeeklyWindowCapacity(9.4),
+    9,
+    "Weekly capacity must round to whole windows."
+  );
+  expectEqual(
+    popup.exports.normalizeWeeklyWindowCapacity(""),
+    9,
+    "Blank weekly capacity input must fall back to the default."
+  );
+
+  const usage = {
+    session: { percentage: 0, resetsAt: null },
+    weekly: { percentage: 0, resetsAt: htmlReset },
+    lastUpdated: Date.now(),
+  };
+  const lifecyclePopup = loadPopupExports();
+  lifecyclePopup.exports.renderUsage(usage);
+  expectTruthy(
+    lifecyclePopup.elements.content.innerHTML.includes('aria-pressed="false"'),
+    "A newly opened popup must render the today toggle as off."
+  );
+  expectTruthy(
+    lifecyclePopup.elements.content.innerHTML.includes('value="9"'),
+    "A newly opened popup must render the default weekly capacity."
+  );
+
+  let preventedDefault = false;
+  lifecyclePopup.exports.handleWeekWindowToggle({
+    type: "click",
+    target: {
+      closest: (selector) => selector === "[data-week-window-toggle]" ? {} : null,
+    },
+    preventDefault() {
+      preventedDefault = true;
+    },
+  });
+  expectEqual(preventedDefault, true, "Clicking the today square must prevent the default event.");
+  expectTruthy(
+    lifecyclePopup.elements.weeklyWindow.innerHTML.includes('aria-pressed="true"'),
+    "Clicking today must switch the rendered week window to include-today mode."
+  );
+  expectEqual(
+    lifecyclePopup.storageSets.at(-1)?.includeTodayInWeekWindow,
+    true,
+    "Clicking today must persist include-today mode."
+  );
+
+  const weeklyWindowInput = { value: "12", closest: (selector) => selector === "#weeklyWindowInput" ? weeklyWindowInput : null };
+  lifecyclePopup.exports.handleWeeklyWindowInputChange({ target: weeklyWindowInput });
+  expectEqual(
+    lifecyclePopup.storageSets.at(-1)?.weeklyFiveHourWindows,
+    12,
+    "Changing the weekly capacity input must save the normalized value."
+  );
+  expectTruthy(
+    lifecyclePopup.elements.content.innerHTML.includes('value="12"'),
+    "Changing the weekly capacity input must rerender the saved value."
+  );
+  expectTruthy(
+    lifecyclePopup.elements.content.innerHTML.includes("day-cell--today-active"),
+    "Changing the weekly capacity input must preserve include-today active styling."
+  );
+
+  weeklyWindowInput.value = "999";
+  lifecyclePopup.exports.handleWeeklyWindowInputChange({ target: weeklyWindowInput });
+  expectEqual(
+    lifecyclePopup.storageSets.at(-1)?.weeklyFiveHourWindows,
+    500,
+    "Changing the weekly capacity input must clamp oversized values before saving."
+  );
+
+  weeklyWindowInput.value = "-5";
+  lifecyclePopup.exports.handleWeeklyWindowInputChange({ target: weeklyWindowInput });
+  expectEqual(
+    lifecyclePopup.storageSets.at(-1)?.weeklyFiveHourWindows,
+    1,
+    "Changing the weekly capacity input must clamp undersized values before saving."
+  );
+
+  lifecyclePopup.exports.renderUsage({
+    ...usage,
+    weekly: { percentage: 20, resetsAt: htmlReset },
+    lastUpdated: Date.now(),
+  });
+  expectTruthy(
+    lifecyclePopup.elements.content.innerHTML.includes('aria-pressed="true"'),
+    "Include-today mode must survive a refresh render while the popup remains open."
+  );
+  expectTruthy(
+    lifecyclePopup.elements.content.innerHTML.includes("day-cell--today-active"),
+    "Include-today active styling must survive a refresh render while the popup remains open."
+  );
+  expectTruthy(
+    lifecyclePopup.elements.content.innerHTML.includes('value="1"'),
+    "Saved weekly capacity must survive a refresh render while the popup remains open."
+  );
+
+  const freshPopup = loadPopupExports();
+  freshPopup.exports.renderUsage(usage);
+  expectTruthy(
+    freshPopup.elements.content.innerHTML.includes('aria-pressed="false"'),
+    "A fresh popup lifecycle must still default the today toggle to off."
+  );
+
+  const storedPopup = loadPopupExports({
+    storageGetResult: { usageData: usage, weeklyFiveHourWindows: 12, includeTodayInWeekWindow: true },
+  });
+  storedPopup.exports.loadStoredUsage();
+  expectTruthy(
+    storedPopup.elements.content.innerHTML.includes('value="12"'),
+    "Stored weekly capacity must be loaded before the first cached usage render."
+  );
+  expectTruthy(
+    storedPopup.elements.content.innerHTML.includes('aria-pressed="true"') &&
+      storedPopup.elements.content.innerHTML.includes("day-cell--today-active"),
+    "Stored include-today mode must be loaded before the first cached usage render."
+  );
+  expectTruthy(
+    storedPopup.elements.content.innerHTML.includes("5h windows"),
+    "Stored weekly capacity must keep the weekly window strip rendered."
   );
 }
 
@@ -521,8 +865,9 @@ function loadBackgroundExports(actionOverrides = {}) {
   ]);
 }
 
-function loadPopupExports() {
+function loadPopupExports(options = {}) {
   const elements = {};
+  const storageSets = [];
   const document = {
     documentElement: {},
     addEventListener() {},
@@ -541,15 +886,27 @@ function loadPopupExports() {
       chrome: {
         i18n: {
           getUILanguage: () => "en",
-          getMessage: (key, substitutions = []) =>
-            substitutions.length ? `${key} ${substitutions.join(" ")}` : key,
+          getMessage: (key, substitutions = []) => {
+            if (key === "dayWindows") return `~${substitutions[0]} × 5h windows`;
+            if (key === "dayToday") return "Today";
+            if (key === "dayWeekend") return "Weekend · 0 windows";
+            return substitutions.length ? `${key} ${substitutions.join(" ")}` : key;
+          },
         },
         runtime: {
-          sendMessage() {},
+          sendMessage(_message, callback) {
+            if (typeof callback === "function") callback(null);
+          },
         },
         storage: {
           local: {
-            get() {},
+            get(_keys, callback) {
+              if (typeof callback === "function") callback(options.storageGetResult || {});
+              return options.storageGetResult || {};
+            },
+            set(value) {
+              storageSets.push(value);
+            },
           },
         },
       },
@@ -559,6 +916,11 @@ function loadPopupExports() {
       "renderUsage",
       "barTone",
       "weekWindowDays",
+      "weekWindow",
+      "handleWeekWindowToggle",
+      "handleWeeklyWindowInputChange",
+      "loadStoredUsage",
+      "normalizeWeeklyWindowCapacity",
       "formatResetDateTime",
     ]
   );
@@ -566,6 +928,7 @@ function loadPopupExports() {
   return {
     exports,
     elements,
+    storageSets,
   };
 }
 
