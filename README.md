@@ -1,18 +1,35 @@
 # Quotalis for Claude
 
-Quotalis is a tiny Chrome extension for people who would rather know their Claude.ai usage limits before a conversation disappears into the quota wall.
-
-There are already bigger usage trackers on the market. This one is intentionally not trying to become a dashboard, a productivity platform, or a suspiciously enthusiastic SaaS funnel. I built it for myself because I wanted a quiet meter, a pinned badge, and fewer surprises.
+Quotalis is a tiny Chrome extension that shows your Claude.ai usage limits before you hit the quota wall.
 
 ![Quotalis for Claude usage popup](quotalis-claude-usage-popup.jpg)
 
 ## What it does
 
-- Shows Claude session, weekly, and Opus weekly usage when Claude returns those values.
-- Displays reset timing in a compact popup.
-- Updates the toolbar badge with remaining session percentage, using clearer caution colors as quota tightens.
-- Refreshes locally on a short interval.
-- Keeps the interface boring in the best possible way.
+- 📊 **Usage meter** — session, weekly, and Opus weekly usage, live from Claude.
+- ⏱️ **Reset countdown** — see exactly when each limit refreshes.
+- 🏷️ **Toolbar badge** — remaining % at a glance, color-coded as quota tightens.
+- 📅 **Weekly forecast** — a 7-day pace strip for your remaining weekly quota (see below).
+- 🔄 **Auto-refresh** — updates locally on a short interval, no accounts, no cloud.
+
+## Weekly forecast
+
+A 7-day strip that splits your remaining weekly quota evenly across the days left until reset, so you always know today's fair share.
+
+**How the split is calculated:**
+
+1. 🔢 Your remaining weekly % is converted into remaining 5-hour windows, using your `5h windows/week` capacity estimate.
+2. 📆 Quotalis counts the usable days left until reset — starting today (or tomorrow if `Done today` is on), skipping weekends unless `Work weekends` is on.
+3. ➗ The remaining windows are divided evenly across those usable days — that's your daily budget.
+4. 🧮 If your daily budget is already ahead of the flat weekly average, the strip backs off the warning color — you have buffer, no need to worry.
+
+**What you see and control:**
+
+- 🗓️ Cell states: past days faded, today highlighted, future days outlined, weekends/excluded days dashed.
+- 🖱️ Hover any day for its exact budget (`~N × 5h windows`).
+- ⚙️ **Settings** (gear icon): `5h windows/week` · `Work weekends` · `Done today` (skip today, resets at midnight).
+- ⚠️ Visual pacing only — it never changes the real numbers Claude reports.
+- 📄 **Full history log** — download the complete usage history as CSV (download icon next to the strip) whenever the pace strip isn't enough and you want to dig into the raw numbers yourself.
 
 ## Languages
 
