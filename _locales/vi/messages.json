@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Không thể làm mới — đang hiển thị dữ liệu gần nhất."
   },
-  "optimizeUsage": {
-    "message": "Tối ưu mức dùng"
+  "routines": {
+    "message": "Quy trình"
   },
   "dayToday": {
     "message": "Hôm nay"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Số cửa sổ hạn mức 5 giờ phù hợp với giới hạn hằng tuần của bạn. Điều này chỉ ảnh hưởng đến ước tính cửa sổ hằng tuần."
+  },
+  "forecastSettingsLabel": {
+    "message": "Cài đặt dự báo"
+  },
+  "forecastTitle": {
+    "message": "Dự báo"
+  },
+  "forecastWorkWeekends": {
+    "message": "Làm cuối tuần"
+  },
+  "forecastDoneToday": {
+    "message": "Xong hôm nay"
   },
   "weekWindowLabel": {
     "message": "Cửa sổ hạn mức 7 ngày"

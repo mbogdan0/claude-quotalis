@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Aktualisierung fehlgeschlagen – letzte bekannte Daten werden angezeigt."
   },
-  "optimizeUsage": {
-    "message": "Nutzung optimieren"
+  "routines": {
+    "message": "Routinen"
   },
   "dayToday": {
     "message": "Heute"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Wie viele 5-Stunden-Kontingentfenster in dein Wochenlimit passen. Dies betrifft nur die Schätzungen der Wochenfenster."
+  },
+  "forecastSettingsLabel": {
+    "message": "Prognoseeinstellungen"
+  },
+  "forecastTitle": {
+    "message": "Prognose"
+  },
+  "forecastWorkWeekends": {
+    "message": "Am Wochenende arbeiten"
+  },
+  "forecastDoneToday": {
+    "message": "Für heute fertig"
   },
   "weekWindowLabel": {
     "message": "7-Tage-Kontingentfenster"

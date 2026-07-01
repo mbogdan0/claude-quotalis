@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Échec de l'actualisation — affichage des dernières données connues."
   },
-  "optimizeUsage": {
-    "message": "Optimiser l'usage"
+  "routines": {
+    "message": "Routines"
   },
   "dayToday": {
     "message": "Aujourd'hui"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Nombre de fenêtres de quota de 5 heures dans votre limite hebdomadaire. Cela affecte uniquement les estimations des fenêtres hebdomadaires."
+  },
+  "forecastSettingsLabel": {
+    "message": "Réglages de prévision"
+  },
+  "forecastTitle": {
+    "message": "Prévision"
+  },
+  "forecastWorkWeekends": {
+    "message": "Travailler le week-end"
+  },
+  "forecastDoneToday": {
+    "message": "Terminé pour aujourd'hui"
   },
   "weekWindowLabel": {
     "message": "Fenêtre de quota sur 7 jours"

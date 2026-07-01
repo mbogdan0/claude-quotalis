@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Não foi possível atualizar — mostrando os últimos dados conhecidos."
   },
-  "optimizeUsage": {
-    "message": "Otimizar uso"
+  "routines": {
+    "message": "Rotinas"
   },
   "dayToday": {
     "message": "Hoje"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Quantas janelas de cota de 5 horas cabem no seu limite semanal. Isso afeta apenas as estimativas das janelas semanais."
+  },
+  "forecastSettingsLabel": {
+    "message": "Configurações de previsão"
+  },
+  "forecastTitle": {
+    "message": "Previsão"
+  },
+  "forecastWorkWeekends": {
+    "message": "Trabalho nos fins de semana"
+  },
+  "forecastDoneToday": {
+    "message": "Concluído por hoje"
   },
   "weekWindowLabel": {
     "message": "Janela de cota de 7 dias"

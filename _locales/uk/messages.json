@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Не вдалося оновити — показано останні відомі дані."
   },
-  "optimizeUsage": {
-    "message": "Оптимізувати використання"
+  "routines": {
+    "message": "Рутини"
   },
   "dayToday": {
     "message": "Сьогодні"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Скільки 5-годинних вікон квоти вміщується у ваш тижневий ліміт. Це впливає лише на оцінки тижневих вікон."
+  },
+  "forecastSettingsLabel": {
+    "message": "Налаштування прогнозу"
+  },
+  "forecastTitle": {
+    "message": "Прогноз"
+  },
+  "forecastWorkWeekends": {
+    "message": "Працюю у вихідні"
+  },
+  "forecastDoneToday": {
+    "message": "На сьогодні завершено"
   },
   "weekWindowLabel": {
     "message": "Вікно квоти на 7 днів"

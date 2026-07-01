@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Impossibile aggiornare — vengono mostrati gli ultimi dati disponibili."
   },
-  "optimizeUsage": {
-    "message": "Ottimizza l'uso"
+  "routines": {
+    "message": "Routine"
   },
   "dayToday": {
     "message": "Oggi"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Quante finestre di quota da 5 ore rientrano nel tuo limite settimanale. Questo influisce solo sulle stime delle finestre settimanali."
+  },
+  "forecastSettingsLabel": {
+    "message": "Impostazioni previsione"
+  },
+  "forecastTitle": {
+    "message": "Previsione"
+  },
+  "forecastWorkWeekends": {
+    "message": "Lavoro nel weekend"
+  },
+  "forecastDoneToday": {
+    "message": "Finito per oggi"
   },
   "weekWindowLabel": {
     "message": "Finestra di quota di 7 giorni"

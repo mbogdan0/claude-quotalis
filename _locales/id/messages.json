@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Tidak dapat menyegarkan — menampilkan data terakhir yang diketahui."
   },
-  "optimizeUsage": {
-    "message": "Optimalkan penggunaan"
+  "routines": {
+    "message": "Rutinitas"
   },
   "dayToday": {
     "message": "Hari ini"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Berapa banyak jendela kuota 5 jam yang muat dalam batas mingguan Anda. Ini hanya memengaruhi perkiraan jendela mingguan."
+  },
+  "forecastSettingsLabel": {
+    "message": "Pengaturan perkiraan"
+  },
+  "forecastTitle": {
+    "message": "Perkiraan"
+  },
+  "forecastWorkWeekends": {
+    "message": "Bekerja akhir pekan"
+  },
+  "forecastDoneToday": {
+    "message": "Selesai untuk hari ini"
   },
   "weekWindowLabel": {
     "message": "Jendela kuota 7 hari"

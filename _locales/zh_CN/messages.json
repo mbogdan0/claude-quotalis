@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "刷新失败 — 正在显示最近一次的数据。"
   },
-  "optimizeUsage": {
-    "message": "优化用量"
+  "routines": {
+    "message": "例程"
   },
   "dayToday": {
     "message": "今天"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "你的每周限额可容纳多少个 5 小时配额窗口。这只会影响每周窗口估算。"
+  },
+  "forecastSettingsLabel": {
+    "message": "预测设置"
+  },
+  "forecastTitle": {
+    "message": "预测"
+  },
+  "forecastWorkWeekends": {
+    "message": "周末工作"
+  },
+  "forecastDoneToday": {
+    "message": "今天已完成"
   },
   "weekWindowLabel": {
     "message": "7 天配额窗口"

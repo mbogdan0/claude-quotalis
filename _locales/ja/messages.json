@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "更新できませんでした — 最後に取得したデータを表示しています。"
   },
-  "optimizeUsage": {
-    "message": "使用量を最適化"
+  "routines": {
+    "message": "ルーティン"
   },
   "dayToday": {
     "message": "今日"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "週間上限に収まる5時間のクォータ枠の数です。週間枠の見積もりにのみ影響します。"
+  },
+  "forecastSettingsLabel": {
+    "message": "予測設定"
+  },
+  "forecastTitle": {
+    "message": "予測"
+  },
+  "forecastWorkWeekends": {
+    "message": "週末も作業する"
+  },
+  "forecastDoneToday": {
+    "message": "今日は完了"
   },
   "weekWindowLabel": {
     "message": "7 日間のクォータ枠"

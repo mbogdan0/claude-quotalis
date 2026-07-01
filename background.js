@@ -55,6 +55,7 @@ async function refreshUsage() {
     // Keep the last known-good numbers; flag the failed refresh instead of blanking.
     usageData = {
       ...previous,
+      signedIn: result.signedIn !== false,
       lastError: result.error,
       lastErrorHint: result.hint || null,
       lastErrorAt: Date.now(),
@@ -94,6 +95,7 @@ async function readClaudeUsage() {
     return {
       error: message("notSignedIn"),
       hint: message("signInHint"),
+      signedIn: false,
     };
   }
 
@@ -136,6 +138,7 @@ async function readClaudeUsage() {
   return {
     error: message("usageUnavailable"),
     hint: message("usageUnavailableHint"),
+    signedIn: true,
   };
 }
 
@@ -200,6 +203,7 @@ function normalizeUsageResponse(payload, source) {
     weekly,
     weeklyOpus,
     source,
+    signedIn: true,
   };
 }
 
@@ -209,6 +213,7 @@ function normalizeBootstrapResponse(payload) {
     weekly: null,
     weeklyOpus: null,
     source: "bootstrap",
+    signedIn: true,
   };
 
   const organization = payload.account?.memberships?.find((membership) => membership.organization)

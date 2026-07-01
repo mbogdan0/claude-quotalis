@@ -1,8 +1,10 @@
 const content = document.getElementById("content");
 const refreshButton = document.getElementById("refreshButton");
+const routinesLink = document.getElementById("routinesLink");
 const USAGE_LOG_STORAGE_KEY = "usageLog";
 const WEEKLY_WINDOW_STORAGE_KEY = "weeklyFiveHourWindows";
-const INCLUDE_TODAY_STORAGE_KEY = "includeTodayInWeekWindow";
+const INCLUDE_WEEKENDS_STORAGE_KEY = "includeWeekendsInWeekWindow";
+const DONE_TODAY_STORAGE_KEY = "doneTodayInWeekWindowDate";
 const DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS = 9;
 const MIN_WEEKLY_FIVE_HOUR_WINDOWS = 1;
 const MAX_WEEKLY_FIVE_HOUR_WINDOWS = 500;
@@ -25,20 +27,24 @@ const USAGE_LOG_CSV_COLUMNS = [
 ];
 let currentUsageData = null;
 let lastWeekWindowHtml = "";
-let includeTodayInWeekWindow = false;
+let includeWeekendsInWeekWindow = false;
+let doneTodayInWeekWindowDate = "";
+let forecastSettingsOpen = false;
 let weeklyFiveHourWindows = DEFAULT_WEEKLY_FIVE_HOUR_WINDOWS;
 
 document.addEventListener("DOMContentLoaded", initializePopup);
 
 function initializePopup() {
-  includeTodayInWeekWindow = false;
+  includeWeekendsInWeekWindow = false;
+  doneTodayInWeekWindowDate = "";
+  forecastSettingsOpen = false;
   lastWeekWindowHtml = "";
   localizeDocument();
   refreshButton.addEventListener("click", () => refreshUsage());
-  content.addEventListener("click", handleWeekWindowToggle);
+  content.addEventListener("click", handleForecastSettingsToggle);
   content.addEventListener("click", handleUsageLogDownload);
-  content.addEventListener("keydown", handleWeekWindowToggle);
   content.addEventListener("change", handleWeeklyWindowInputChange);
+  content.addEventListener("change", handleForecastSettingsChange);
   loadStoredUsage();
   setInterval(updateLiveLabels, 1000);
 }
@@ -63,13 +69,19 @@ function localizeDocument() {
 function loadStoredUsage() {
   // Read the cache directly so the popup paints instantly without waking the
   // (possibly terminated) service worker, then refresh in the background.
-  chrome.storage.local.get(["usageData", WEEKLY_WINDOW_STORAGE_KEY, INCLUDE_TODAY_STORAGE_KEY], (stored) => {
-    weeklyFiveHourWindows = normalizeWeeklyWindowCapacity(stored?.[WEEKLY_WINDOW_STORAGE_KEY]);
-    includeTodayInWeekWindow = Boolean(stored?.[INCLUDE_TODAY_STORAGE_KEY]);
-    const usageData = stored?.usageData;
-    if (usageData) renderUsage(usageData);
-    refreshUsage({ showLoader: !usageData });
-  });
+  chrome.storage.local.get(
+    ["usageData", WEEKLY_WINDOW_STORAGE_KEY, INCLUDE_WEEKENDS_STORAGE_KEY, DONE_TODAY_STORAGE_KEY],
+    (stored) => {
+      weeklyFiveHourWindows = normalizeWeeklyWindowCapacity(stored?.[WEEKLY_WINDOW_STORAGE_KEY]);
+      includeWeekendsInWeekWindow = Boolean(stored?.[INCLUDE_WEEKENDS_STORAGE_KEY]);
+      doneTodayInWeekWindowDate = normalizeDoneTodayDate(stored?.[DONE_TODAY_STORAGE_KEY]);
+      if (!isDoneTodayActive()) doneTodayInWeekWindowDate = "";
+
+      const usageData = stored?.usageData;
+      if (usageData) renderUsage(usageData);
+      refreshUsage({ showLoader: !usageData });
+    }
+  );
 }
 
 function refreshUsage({ showLoader = false } = {}) {
@@ -86,6 +98,7 @@ function refreshUsage({ showLoader = false } = {}) {
 }
 
 function showLoading() {
+  updateRoutinesLinkVisibility(null);
   content.innerHTML = `
     <div class="empty">
       <div class="loader" aria-hidden="true"></div>
@@ -98,6 +111,7 @@ function renderUsage(usageData) {
   currentUsageData = usageData;
   lastWeekWindowHtml = "";
   updateUpdatedValue(usageData);
+  updateRoutinesLinkVisibility(usageData);
 
   // Full error screen only when there is no usable data to show.
   if (!usageData.session) {
@@ -145,11 +159,20 @@ function applyStaleState(usageData) {
   updatedValue.title = stale ? message("refreshFailed") : "";
 }
 
+function updateRoutinesLinkVisibility(usageData) {
+  if (!routinesLink) return;
+
+  const signedIn = usageData?.signedIn === true || (usageData?.signedIn !== false && Boolean(usageData?.session));
+  routinesLink.hidden = !signedIn;
+}
+
 function updateLiveLabels() {
   updateCountdowns();
+  const didResetDoneToday = resetExpiredDoneTodaySetting();
   if (currentUsageData) {
     updateUpdatedValue(currentUsageData);
-    updateWeeklyFooterState(currentUsageData.weekly);
+    if (didResetDoneToday) renderUsage(currentUsageData);
+    else updateWeeklyFooterState(currentUsageData.weekly);
   }
 }
 
@@ -216,24 +239,60 @@ function weeklyFooter(usageData) {
           </svg>
         </button>
       </div>
-      <div class="weekly-actions" id="weeklyWindow">
-        ${weekWindow(usageData.weekly, { includeToday: includeTodayInWeekWindow, weeklyWindows: weeklyFiveHourWindows })}
+      <div class="weekly-actions">
+        <div class="weekly-window-host" id="weeklyWindow">
+          ${weekWindow(usageData.weekly, weekWindowOptions())}
+        </div>
+        ${forecastSettingsButton()}
       </div>
+      ${forecastSettingsPanel()}
     </div>
   `;
 }
 
-function handleWeekWindowToggle(event) {
-  const target = event.target?.closest?.("[data-week-window-toggle]");
+function forecastSettingsButton() {
+  const label = message("forecastSettingsLabel");
+  return `
+    <button class="forecast-settings-toggle" type="button" data-forecast-settings-toggle data-forecast-settings-tooltip="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" aria-expanded="${forecastSettingsOpen ? "true" : "false"}" aria-controls="weeklyForecastSettings">
+      <svg class="forecast-settings-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h10"></path>
+        <path d="M18 7h2"></path>
+        <path d="M16 5v4"></path>
+        <path d="M4 17h2"></path>
+        <path d="M10 17h10"></path>
+        <path d="M8 15v4"></path>
+      </svg>
+    </button>
+  `;
+}
+
+function forecastSettingsPanel() {
+  if (!forecastSettingsOpen) return "";
+
+  return `
+    <div class="weekly-forecast-panel" id="weeklyForecastSettings" role="group" aria-label="${escapeHtml(message("forecastTitle"))}">
+      <div class="weekly-forecast-title">${escapeHtml(message("forecastTitle"))}</div>
+      <label class="forecast-check">
+        <input type="checkbox" data-forecast-setting="include-weekends" ${includeWeekendsInWeekWindow ? "checked" : ""}>
+        <span>${escapeHtml(message("forecastWorkWeekends"))}</span>
+      </label>
+      <label class="forecast-check">
+        <input type="checkbox" data-forecast-setting="done-today" ${isDoneTodayActive() ? "checked" : ""}>
+        <span>${escapeHtml(message("forecastDoneToday"))}</span>
+      </label>
+    </div>
+  `;
+}
+
+function handleForecastSettingsToggle(event) {
+  const target = event.target?.closest?.("[data-forecast-settings-toggle]");
   if (!target) return;
 
-  if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
   event.preventDefault();
 
-  includeTodayInWeekWindow = !includeTodayInWeekWindow;
+  forecastSettingsOpen = !forecastSettingsOpen;
   lastWeekWindowHtml = "";
-  chrome.storage.local.set({ [INCLUDE_TODAY_STORAGE_KEY]: includeTodayInWeekWindow });
-  updateWeeklyFooterState(currentUsageData?.weekly);
+  if (currentUsageData) renderUsage(currentUsageData);
 }
 
 function handleWeeklyWindowInputChange(event) {
@@ -246,6 +305,25 @@ function handleWeeklyWindowInputChange(event) {
   lastWeekWindowHtml = "";
   chrome.storage.local.set({ [WEEKLY_WINDOW_STORAGE_KEY]: nextValue });
 
+  if (currentUsageData) renderUsage(currentUsageData);
+}
+
+function handleForecastSettingsChange(event) {
+  const target = event.target?.closest?.("[data-forecast-setting]");
+  if (!target) return;
+
+  const setting = target.dataset.forecastSetting;
+  if (setting === "include-weekends") {
+    includeWeekendsInWeekWindow = Boolean(target.checked);
+    chrome.storage.local.set({ [INCLUDE_WEEKENDS_STORAGE_KEY]: includeWeekendsInWeekWindow });
+  } else if (setting === "done-today") {
+    doneTodayInWeekWindowDate = target.checked ? localDateKey(new Date()) : "";
+    chrome.storage.local.set({ [DONE_TODAY_STORAGE_KEY]: doneTodayInWeekWindowDate });
+  } else {
+    return;
+  }
+
+  lastWeekWindowHtml = "";
   if (currentUsageData) renderUsage(currentUsageData);
 }
 
@@ -315,6 +393,35 @@ function padFilenamePart(value) {
   return String(value).padStart(2, "0");
 }
 
+function localDateKey(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+
+  return [
+    date.getFullYear(),
+    padFilenamePart(date.getMonth() + 1),
+    padFilenamePart(date.getDate()),
+  ].join("-");
+}
+
+function normalizeDoneTodayDate(value) {
+  const text = typeof value === "string" ? value : "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
+}
+
+function isDoneTodayActive(now = new Date()) {
+  return doneTodayInWeekWindowDate === localDateKey(now);
+}
+
+function resetExpiredDoneTodaySetting() {
+  if (!doneTodayInWeekWindowDate || isDoneTodayActive()) return false;
+
+  doneTodayInWeekWindowDate = "";
+  lastWeekWindowHtml = "";
+  chrome.storage.local.set({ [DONE_TODAY_STORAGE_KEY]: "" });
+  return true;
+}
+
 function updateUpdatedValue(usageData) {
   const updatedValue = document.getElementById("updatedValue");
   if (!updatedValue) return;
@@ -330,10 +437,18 @@ function updateWeeklyFooterState(weeklyData) {
   // Only repaint when the strip actually changes (a day or reset boundary
   // crossed). Repainting every tick would wipe the cell under the cursor and
   // make the hover tooltip flicker.
-  const next = weekWindow(weeklyData, { includeToday: includeTodayInWeekWindow, weeklyWindows: weeklyFiveHourWindows });
+  const next = weekWindow(weeklyData, weekWindowOptions());
   if (next === lastWeekWindowHtml && host.innerHTML) return;
   lastWeekWindowHtml = next;
   host.innerHTML = next;
+}
+
+function weekWindowOptions() {
+  return {
+    doneToday: isDoneTodayActive(),
+    includeWeekends: includeWeekendsInWeekWindow,
+    weeklyWindows: weeklyFiveHourWindows,
+  };
 }
 
 function hasWeeklyCapacityBuffer(remaining, reset, weeklyWindows = weeklyFiveHourWindows) {
@@ -359,7 +474,11 @@ function weeklyCapacity(remaining, reset, weeklyWindows = weeklyFiveHourWindows)
 }
 
 function weekWindowDays(weeklyData, now = new Date(), options = {}) {
-  const includeToday = Boolean(options.includeToday);
+  const legacyIncludeToday = Object.prototype.hasOwnProperty.call(options, "includeToday")
+    ? Boolean(options.includeToday)
+    : null;
+  const doneToday = legacyIncludeToday === null ? Boolean(options.doneToday) : !legacyIncludeToday;
+  const includeWeekends = Boolean(options.includeWeekends);
   const weeklyWindows = normalizeWeeklyWindowCapacity(options.weeklyWindows ?? weeklyFiveHourWindows);
   const rawResetDate = weeklyData?.resetsAt ? new Date(weeklyData.resetsAt) : null;
   const hasReset = rawResetDate && Number.isFinite(rawResetDate.getTime());
@@ -401,63 +520,67 @@ function weekWindowDays(weeklyData, now = new Date(), options = {}) {
   });
   const weekends = dates.map((date) => isWeekend(date));
 
-  // By default today is only a "you are here" marker: its spend so far and
-  // what's left of it are unknowable, so the remaining budget is spread across
-  // full weekdays ahead. The toggle includes today in that even split.
+  // Forecast settings only affect the visible day split; they do not change the
+  // fetched Claude quota numbers.
   const remaining = 100 - clampPercentage(weeklyData.percentage || 0);
   const remainingWindows = (remaining / 100) * weeklyWindows;
   const resetDayTime = startOfDay(resetDate).getTime();
   let usableDays = 0;
-  const firstAllocationDay = includeToday ? today : addDays(today, 1);
+  const firstAllocationDay = doneToday ? addDays(today, 1) : today;
   for (let cursor = firstAllocationDay; cursor.getTime() <= resetDayTime; cursor = addDays(cursor, 1)) {
-    if (!isWeekend(cursor)) usableDays += 1;
+    if (isForecastEligibleDay(cursor, includeWeekends)) usableDays += 1;
   }
   const perDay = usableDays > 0 ? remainingWindows / usableDays : 0;
 
   return dates.map((date, index) => {
     const state = states[index];
     const weekend = weekends[index];
+    const eligible = isForecastEligibleDay(date, includeWeekends);
+    const done = state === "today" && doneToday;
+    const excluded = (state === "today" || state === "future") && (!eligible || done);
     const tooltipParts = [weekdayLabel(date)];
     let windows = null;
 
     if (state === "today") {
-      if (weekend) {
+      if (done || !eligible) {
         windows = 0;
         tooltipParts.push(zeroWindowsLabel());
-      } else if (includeToday) {
+      } else {
         windows = perDay;
         tooltipParts.push(message("dayWindows", [formatDecimal(perDay, 1)]));
       }
     } else if (state === "future") {
-      windows = weekend ? 0 : perDay;
-      tooltipParts.push(weekend ? zeroWindowsLabel() : message("dayWindows", [formatDecimal(perDay, 1)]));
+      windows = eligible ? perDay : 0;
+      tooltipParts.push(eligible ? message("dayWindows", [formatDecimal(perDay, 1)]) : zeroWindowsLabel());
     }
 
-    return { state, weekend, windows, tooltip: tooltipParts.join(" · ") };
+    return { state, weekend, excluded, done, windows, tooltip: tooltipParts.join(" · ") };
   });
 }
 
 function weekWindow(weeklyData, options = {}) {
-  const includeToday = Boolean(options.includeToday);
+  const doneToday = Boolean(options.doneToday);
+  const includeWeekends = Boolean(options.includeWeekends);
   const weeklyWindows = normalizeWeeklyWindowCapacity(options.weeklyWindows ?? weeklyFiveHourWindows);
-  const cells = weekWindowDays(weeklyData, new Date(), { includeToday, weeklyWindows })
+  const cells = weekWindowDays(weeklyData, new Date(), { doneToday, includeWeekends, weeklyWindows })
     .map((cell) => {
       // The weekend "excluded / 0" look only applies to upcoming days; past and
       // current weekends just use their state styling.
-      const weekendClass = cell.weekend && cell.state === "future" ? " day-cell--weekend" : "";
-      const activeClass = cell.state === "today" && includeToday ? " day-cell--today-active" : "";
-      const className = `day-cell day-cell--${cell.state}${weekendClass}${activeClass}`;
+      const weekendClass = cell.excluded && cell.state === "future" ? " day-cell--weekend" : "";
+      const doneClass = cell.done ? " day-cell--today-done" : "";
+      const className = `day-cell day-cell--${cell.state}${weekendClass}${doneClass}`;
       const tooltip = cell.tooltip
         ? ` data-day-tooltip="${escapeHtml(cell.tooltip)}" tabindex="0"`
         : "";
-      const toggle = cell.state === "today"
-        ? ` data-week-window-toggle="true" role="button" aria-pressed="${includeToday ? "true" : "false"}" aria-label="${escapeHtml(cell.tooltip)}"`
-        : "";
-      return `<span class="${className}"${tooltip}${toggle}></span>`;
+      return `<span class="${className}"${tooltip}></span>`;
     })
     .join("");
 
   return `<div class="week-window" role="group" aria-label="${escapeHtml(message("weekWindowLabel"))}">${cells}</div>`;
+}
+
+function isForecastEligibleDay(value, includeWeekends) {
+  return includeWeekends || !isWeekend(value);
 }
 
 function weekdayLabel(value) {

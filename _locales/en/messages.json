@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "Couldn't refresh — showing last known data."
   },
-  "optimizeUsage": {
-    "message": "Optimize usage"
+  "routines": {
+    "message": "Routines"
   },
   "dayToday": {
     "message": "Today"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "How many 5-hour quota windows fit in your weekly limit. This only affects weekly window estimates."
+  },
+  "forecastSettingsLabel": {
+    "message": "Forecast settings"
+  },
+  "forecastTitle": {
+    "message": "Forecast"
+  },
+  "forecastWorkWeekends": {
+    "message": "Work weekends"
+  },
+  "forecastDoneToday": {
+    "message": "Done today"
   },
   "weekWindowLabel": {
     "message": "7-day quota window"

@@ -141,8 +141,8 @@
   "refreshFailed": {
     "message": "No se pudo actualizar: se muestran los últimos datos conocidos."
   },
-  "optimizeUsage": {
-    "message": "Optimizar uso"
+  "routines": {
+    "message": "Rutinas"
   },
   "dayToday": {
     "message": "Hoy"
@@ -166,6 +166,18 @@
   },
   "weeklyWindowSettingHelp": {
     "message": "Cuántas ventanas de cuota de 5 horas caben en tu límite semanal. Esto solo afecta las estimaciones de ventanas semanales."
+  },
+  "forecastSettingsLabel": {
+    "message": "Ajustes de previsión"
+  },
+  "forecastTitle": {
+    "message": "Previsión"
+  },
+  "forecastWorkWeekends": {
+    "message": "Trabajo fines de semana"
+  },
+  "forecastDoneToday": {
+    "message": "Terminé por hoy"
   },
   "weekWindowLabel": {
     "message": "Ventana de cuota de 7 días"
